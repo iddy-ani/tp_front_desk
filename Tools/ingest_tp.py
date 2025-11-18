@@ -44,6 +44,11 @@ IMPORTANT_ARTIFACTS = {
     "EnvironmentFile.env": "env",
 }
 
+GIT_INFO_CANDIDATES = (
+    Path("Reports") / "GitInfo.txt",
+    Path("Reports") / "GitReportInfo.txt",
+)
+
 
 def collect_artifact_references(tp_dir: Path) -> List[models.ArtifactReference]:
     references: List[models.ArtifactReference] = []
@@ -110,76 +115,64 @@ def build_tp_metadata(
     )
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Parse TP integration reports into structured JSON.")
-    parser.add_argument("--tp-name", required=True, help="Name of the TP folder under the Test Programs directory.")
-    parser.add_argument(
-        "--repo-root",
-        type=Path,
-        default=Path(__file__).resolve().parent.parent,
-        help="Override repository root (defaults to current repo).",
-    )
-    parser.add_argument(
-        "--report",
-        type=Path,
-        default=None,
-        help="Optional explicit path to Integration_Report.txt (bypasses tp-name lookup).",
-    )
-    parser.add_argument("--git-hash", default="unknown", help="Git hash to associate with this ingestion run.")
-    parser.add_argument(
-        "--no-persist",
-        action="store_true",
-        help="Skip writing results to MongoDB (defaults to persisting).",
-    )
-    parser.add_argument(
-        "--product-config",
-        type=Path,
-        default=None,
-        help="Optional path to Products.json (defaults to repo root / Products.json).",
-    )
-    parser.add_argument(
-        "--product-code",
-        default=None,
-        help="Optional product code override when selecting the product config entry.",
-    )
-    return parser
+def read_git_hash(tp_dir: Path, fallback: str = "unknown") -> str:
+    for relative in GIT_INFO_CANDIDATES:
+        candidate = tp_dir / relative
+        if not candidate.exists():
+            continue
+        try:
+            for line in candidate.read_text(encoding="utf-8", errors="ignore").splitlines():
+                stripped = line.strip()
+                if stripped.lower().startswith("githash"):
+                    _, _, value = stripped.partition(":")
+                    value = value.strip()
+                    if value:
+                        return value
+        except OSError:
+            continue
+    return fallback
 
 
-def main() -> None:
-    parser = build_parser()
-    args = parser.parse_args()
-    settings = IngestSettings.from_env(repo_root=args.repo_root)
-
-    tp_dir = settings.tp_root / args.tp_name
-    report_path = args.report
+def run_ingestion(
+    tp_name: str,
+    settings: IngestSettings,
+    *,
+    report_path: Optional[Path] = None,
+    git_hash: Optional[str] = None,
+    no_persist: bool = False,
+    product_config_path: Optional[Path] = None,
+    product_code: Optional[str] = None,
+) -> Dict[str, Any]:
+    tp_dir = settings.tp_root / tp_name
     if report_path is None:
         report_path = tp_dir / "Reports" / "Integration_Report.txt"
     else:
         report_path = report_path.resolve()
         tp_dir = report_path.parent.parent
     report_path = report_path.resolve()
-    if args.report is None:
-        tp_dir = tp_dir.resolve()
-    else:
-        tp_dir = report_path.parent.parent
     if not report_path.exists():
         raise FileNotFoundError(f"Integration report not found at {report_path}")
+    tp_dir = tp_dir.resolve()
+    if not tp_dir.exists():
+        raise FileNotFoundError(f"TP directory not found at {tp_dir}")
 
-    product_config_path = args.product_config or (settings.repo_root / "Products.json")
+    product_config_path = product_config_path or (settings.repo_root / "Products.json")
     product_config: Optional[models.ProductConfig] = None
     product_warning: Optional[str] = None
     if product_config_path:
         try:
             configs = load_product_configs(product_config_path)
-            product_config = find_product_config(configs, args.tp_name, args.product_code)
+            product_config = find_product_config(configs, tp_name, product_code)
             if product_config is None:
                 product_warning = (
-                    f"No product config entry matched TP {args.tp_name} in {product_config_path}"
+                    f"No product config entry matched TP {tp_name} in {product_config_path}"
                 )
         except FileNotFoundError:
             product_warning = f"Product config file not found at {product_config_path}"
         except ValueError as exc:
             product_warning = f"Unable to parse product config file {product_config_path}: {exc}"
+
+    resolved_git_hash = git_hash or read_git_hash(tp_dir)
 
     integration = IntegrationReportParser().parse(report_path)
     pas_path = report_path.parent / "PASReport.csv"
@@ -202,6 +195,8 @@ def main() -> None:
         artifacts=artifacts,
     )
     payload: Dict[str, Any] = {
+        "tp_name": tp_name,
+        "git_hash": resolved_git_hash,
         "program": integration.program.__dict__,
         "environment": {
             "prime_rev": integration.environment.prime_rev,
@@ -241,11 +236,12 @@ def main() -> None:
     if product_warning:
         warnings.append(product_warning)
     payload["warnings"] = warnings
-    if not args.no_persist:
+
+    if not no_persist:
         mongo_settings = settings.mongo
         artifact = models.IngestArtifact(
-            tp_name=args.tp_name,
-            git_hash=args.git_hash,
+            tp_name=tp_name,
+            git_hash=resolved_git_hash,
             report=integration,
             metadata=metadata,
         )
@@ -262,14 +258,12 @@ def main() -> None:
             mongo_settings.setpoints_collection,
         )
         doc_id = writer.write_ingest_artifact(artifact)
-        pas_rows = writer.write_pas_records(args.tp_name, args.git_hash, pas_result.records)
-        plist_rows = writer.write_plist_entries(args.tp_name, args.git_hash, plist_result.entries)
-        cake_rows = writer.write_cake_audit_entries(args.tp_name, args.git_hash, cake_result.entries)
-        vmin_rows = writer.write_vmin_search_records(args.tp_name, args.git_hash, vmin_result.records)
-        scoreboard_rows = writer.write_scoreboard_entries(
-            args.tp_name, args.git_hash, scoreboard_result.entries
-        )
-        setpoint_rows = writer.write_setpoint_entries(args.tp_name, args.git_hash, setpoints_result.entries)
+        pas_rows = writer.write_pas_records(tp_name, resolved_git_hash, pas_result.records)
+        plist_rows = writer.write_plist_entries(tp_name, resolved_git_hash, plist_result.entries)
+        cake_rows = writer.write_cake_audit_entries(tp_name, resolved_git_hash, cake_result.entries)
+        vmin_rows = writer.write_vmin_search_records(tp_name, resolved_git_hash, vmin_result.records)
+        scoreboard_rows = writer.write_scoreboard_entries(tp_name, resolved_git_hash, scoreboard_result.entries)
+        setpoint_rows = writer.write_setpoint_entries(tp_name, resolved_git_hash, setpoints_result.entries)
         product_doc_id: Optional[str] = None
         if product_config:
             product_doc_id = writer.upsert_product_config(product_config)
@@ -286,6 +280,57 @@ def main() -> None:
     else:
         payload["mongo_doc_id"] = "skipped"
 
+    return payload
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Parse TP integration reports into structured JSON.")
+    parser.add_argument("--tp-name", required=True, help="Name of the TP folder under the Test Programs directory.")
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=Path(__file__).resolve().parent.parent,
+        help="Override repository root (defaults to current repo).",
+    )
+    parser.add_argument(
+        "--report",
+        type=Path,
+        default=None,
+        help="Optional explicit path to Integration_Report.txt (bypasses tp-name lookup).",
+    )
+    parser.add_argument("--git-hash", default=None, help="Optional git hash override (auto-detected when omitted).")
+    parser.add_argument(
+        "--no-persist",
+        action="store_true",
+        help="Skip writing results to MongoDB (defaults to persisting).",
+    )
+    parser.add_argument(
+        "--product-config",
+        type=Path,
+        default=None,
+        help="Optional path to Products.json (defaults to repo root / Products.json).",
+    )
+    parser.add_argument(
+        "--product-code",
+        default=None,
+        help="Optional product code override when selecting the product config entry.",
+    )
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+    settings = IngestSettings.from_env(repo_root=args.repo_root)
+    payload = run_ingestion(
+        tp_name=args.tp_name,
+        settings=settings,
+        report_path=args.report,
+        git_hash=args.git_hash,
+        no_persist=args.no_persist,
+        product_config_path=args.product_config,
+        product_code=args.product_code,
+    )
     print(json.dumps(payload, indent=2))
 
 
