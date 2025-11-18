@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from pymongo import MongoClient
+from pymongo import ASCENDING, MongoClient
 
 try:
     import mongomock
@@ -36,6 +36,8 @@ class MongoWriter(DatabaseWriter):
     def __init__(self, uri: str, db_name: str, collection: str = "ingest_artifacts") -> None:
         self._client = _build_client(uri)
         self._collection = self._client[db_name][collection]
+        self._is_mock = mongomock is not None and isinstance(self._client, mongomock.MongoClient)
+        self._ensure_indexes()
 
     def write_ingest_artifact(self, artifact: models.IngestArtifact) -> str:
         document_id = f"{artifact.tp_name}:{artifact.git_hash}"
@@ -44,6 +46,18 @@ class MongoWriter(DatabaseWriter):
         doc["ingested_at"] = datetime.now(timezone.utc)
         self._collection.update_one({"_id": document_id}, {"$set": doc}, upsert=True)
         return document_id
+
+    def _ensure_indexes(self) -> None:
+        """Create the indexes expected by the ingestion/query paths."""
+        if self._is_mock:
+            return
+
+        index_specs = (
+            ([("tp_name", ASCENDING), ("git_hash", ASCENDING)], {"name": "tp_git_idx"}),
+            ([("report.dll_inventory.name", ASCENDING)], {"name": "dll_inventory_name_idx"}),
+        )
+        for keys, options in index_specs:
+            self._collection.create_index(keys, **options)
 
     def upsert_report(self, tp_name: str, git_hash: str, report: models.IntegrationReport) -> str:
         """Backwards-compatible helper for existing callers."""
