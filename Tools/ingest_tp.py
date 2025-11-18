@@ -13,6 +13,7 @@ from typing import Any, Dict
 from tp_ingest.config import IngestSettings
 from tp_ingest.parsers import IntegrationReportParser
 from tp_ingest.persistence import MongoWriter
+from tp_ingest import models
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -70,8 +71,9 @@ def main() -> None:
     }
     if not args.no_persist:
         mongo_settings = settings.mongo
+        artifact = models.IngestArtifact(tp_name=args.tp_name, git_hash=args.git_hash, report=integration)
         writer = MongoWriter(mongo_settings.uri, mongo_settings.database, mongo_settings.collection)
-        doc_id = writer.upsert_report(tp_name=args.tp_name, git_hash=args.git_hash, report=integration)
+        doc_id = writer.write_ingest_artifact(artifact)
         writer.close()
         payload["mongo_doc_id"] = doc_id
     else:
