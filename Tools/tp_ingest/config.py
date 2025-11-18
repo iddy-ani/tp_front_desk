@@ -13,6 +13,7 @@ class MongoSettings:
     database: str
     collection: str
     pas_collection: str
+    plist_collection: str
     tls: bool = True
 
     @classmethod
@@ -29,12 +30,14 @@ class MongoSettings:
         database = os.environ.get("TPFD_MONGO_DB", "tpfrontdesk")
         collection = os.environ.get("TPFD_MONGO_COLLECTION", "ingest_artifacts")
         pas_collection = os.environ.get("TPFD_MONGO_PAS_COLLECTION", "pas_records")
+        plist_collection = os.environ.get("TPFD_MONGO_PLIST_COLLECTION", "plist_entries")
         tls = os.environ.get("TPFD_MONGO_TLS", "true").lower() in {"1", "true", "yes"}
         return cls(
             uri=uri,
             database=database,
             collection=collection,
             pas_collection=pas_collection,
+            plist_collection=plist_collection,
             tls=tls,
         )
 

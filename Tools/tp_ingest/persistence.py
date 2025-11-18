@@ -12,7 +12,11 @@ except ImportError:  # pragma: no cover - optional dependency
     mongomock = None
 
 from . import models
-from .serialization import ingest_artifact_to_document, pas_record_to_document
+from .serialization import (
+    ingest_artifact_to_document,
+    pas_record_to_document,
+    plist_entry_to_document,
+)
 
 
 def _build_client(uri: str) -> MongoClient:
@@ -39,10 +43,12 @@ class MongoWriter(DatabaseWriter):
         db_name: str,
         collection: str = "ingest_artifacts",
         pas_collection: str = "pas_records",
+        plist_collection: str = "plist_entries",
     ) -> None:
         self._client = _build_client(uri)
         self._collection = self._client[db_name][collection]
         self._pas_collection = self._client[db_name][pas_collection]
+        self._plist_collection = self._client[db_name][plist_collection]
         self._is_mock = mongomock is not None and isinstance(self._client, mongomock.MongoClient)
         self._ensure_indexes()
 
@@ -72,6 +78,12 @@ class MongoWriter(DatabaseWriter):
             [("module_name", ASCENDING), ("instance_name", ASCENDING)],
             name="pas_module_instance_idx",
         )
+        self._plist_collection.create_index(
+            [("tp_document_id", ASCENDING)], name="plist_tp_idx"
+        )
+        self._plist_collection.create_index(
+            [("pattern_name", ASCENDING)], name="plist_pattern_idx"
+        )
 
     def write_pas_records(
         self, tp_name: str, git_hash: str, records: Iterable[models.PASRecord]
@@ -86,6 +98,20 @@ class MongoWriter(DatabaseWriter):
         self._pas_collection.delete_many({"tp_document_id": tp_document_id})
         if docs:
             self._pas_collection.insert_many(docs)
+        return len(docs)
+
+    def write_plist_entries(
+        self, tp_name: str, git_hash: str, entries: Iterable[models.PlistEntry]
+    ) -> int:
+        tp_document_id = f"{tp_name}:{git_hash}"
+        docs = []
+        for entry in entries:
+            doc = plist_entry_to_document(entry)
+            doc["tp_document_id"] = tp_document_id
+            docs.append(doc)
+        self._plist_collection.delete_many({"tp_document_id": tp_document_id})
+        if docs:
+            self._plist_collection.insert_many(docs)
         return len(docs)
 
     def upsert_report(self, tp_name: str, git_hash: str, report: models.IntegrationReport) -> str:

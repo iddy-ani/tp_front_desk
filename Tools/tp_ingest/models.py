@@ -105,6 +105,23 @@ class PASRecord:
 
 
 @dataclass
+class PlistEntry:
+    pattern_name: str
+    total_patterns: Optional[int]
+    commented_patterns: Optional[int]
+    flatten: bool = False
+    burst_off: bool = False
+    pre_burst: Optional[str] = None
+    post_burst: Optional[str] = None
+    pre_burst_plist: Optional[str] = None
+    post_burst_plist: Optional[str] = None
+    pre_pattern: Optional[str] = None
+    post_pattern: Optional[str] = None
+    mask: Optional[str] = None
+    keep_alive: Optional[str] = None
+
+
+@dataclass
 class IngestArtifact:
     tp_name: str
     git_hash: str

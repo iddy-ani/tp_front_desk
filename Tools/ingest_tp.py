@@ -11,8 +11,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from tp_ingest.config import IngestSettings
-from tp_ingest.parsers import IntegrationReportParser
-from tp_ingest.parsers.pas import PASReportParser
+from tp_ingest.parsers import IntegrationReportParser, PASReportParser, PlistMasterParser
 from tp_ingest.persistence import MongoWriter
 from tp_ingest import models
 
@@ -57,6 +56,8 @@ def main() -> None:
     integration = IntegrationReportParser().parse(report_path)
     pas_path = report_path.parent / "PASReport.csv"
     pas_result = PASReportParser().parse(pas_path)
+    plist_path = report_path.parent / "plist_master.csv"
+    plist_result = PlistMasterParser().parse(plist_path)
     payload: Dict[str, Any] = {
         "program": integration.program.__dict__,
         "environment": {
@@ -70,8 +71,9 @@ def main() -> None:
         "flow_table_count": len(integration.flow_tables),
         "dll_inventory_count": len(integration.dll_inventory),
         "dll_sample": [entry.__dict__ for entry in integration.dll_inventory[:5]],
-        "warnings": integration.warnings + pas_result.warnings,
+        "warnings": integration.warnings + pas_result.warnings + plist_result.warnings,
         "pas_records_count": len(pas_result.records),
+        "plist_entries_count": len(plist_result.entries),
     }
     if not args.no_persist:
         mongo_settings = settings.mongo
@@ -81,12 +83,15 @@ def main() -> None:
             mongo_settings.database,
             mongo_settings.collection,
             mongo_settings.pas_collection,
+            mongo_settings.plist_collection,
         )
         doc_id = writer.write_ingest_artifact(artifact)
         pas_rows = writer.write_pas_records(args.tp_name, args.git_hash, pas_result.records)
+        plist_rows = writer.write_plist_entries(args.tp_name, args.git_hash, plist_result.entries)
         writer.close()
         payload["mongo_doc_id"] = doc_id
         payload["pas_records_persisted"] = pas_rows
+        payload["plist_entries_persisted"] = plist_rows
     else:
         payload["mongo_doc_id"] = "skipped"
 

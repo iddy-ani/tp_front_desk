@@ -65,3 +65,21 @@ def pas_record_to_document(record: models.PASRecord) -> Dict[str, Any]:
         "frequency": record.frequency,
         "instance_user": record.instance_user,
     }
+
+
+def plist_entry_to_document(entry: models.PlistEntry) -> Dict[str, Any]:
+    return {
+        "pattern_name": entry.pattern_name,
+        "total_patterns": entry.total_patterns,
+        "commented_patterns": entry.commented_patterns,
+        "flatten": entry.flatten,
+        "burst_off": entry.burst_off,
+        "pre_burst": entry.pre_burst,
+        "post_burst": entry.post_burst,
+        "pre_burst_plist": entry.pre_burst_plist,
+        "post_burst_plist": entry.post_burst_plist,
+        "pre_pattern": entry.pre_pattern,
+        "post_pattern": entry.post_pattern,
+        "mask": entry.mask,
+        "keep_alive": entry.keep_alive,
+    }
