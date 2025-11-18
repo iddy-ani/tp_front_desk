@@ -83,3 +83,39 @@ def plist_entry_to_document(entry: models.PlistEntry) -> Dict[str, Any]:
         "mask": entry.mask,
         "keep_alive": entry.keep_alive,
     }
+
+
+def cake_audit_entry_to_document(entry: models.CakeAuditEntry) -> Dict[str, Any]:
+    return {
+        "domain_name": entry.domain_name,
+        "shift_name": entry.shift_name,
+        "gsds": entry.gsds,
+    }
+
+
+def vmin_search_record_to_document(record: models.VMinSearchRecord) -> Dict[str, Any]:
+    return {
+        "module": record.module,
+        "test_name": record.test_name,
+        "template": record.template,
+        "execution_mode": record.execution_mode,
+        "vmin_predict": record.vmin_predict,
+        "low_search": record.low_search,
+        "hi_search": record.hi_search,
+        "gsds": record.gsds,
+        "search_pin": record.search_pin,
+        "overshoot_recv": record.overshoot_recv,
+        "vmin_pred_high": record.vmin_pred_high,
+        "search_result": record.search_result,
+    }
+
+
+def scoreboard_entry_to_document(entry: models.ScoreboardEntry) -> Dict[str, Any]:
+    return {
+        "module": entry.module,
+        "test_instance": entry.test_instance,
+        "base_number": entry.base_number,
+        "duplicate": entry.duplicate,
+        "in_range": entry.in_range,
+        "extra_info": entry.extra_info,
+    }

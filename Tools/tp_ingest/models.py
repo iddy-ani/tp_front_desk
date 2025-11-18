@@ -122,6 +122,39 @@ class PlistEntry:
 
 
 @dataclass
+class CakeAuditEntry:
+    domain_name: str
+    shift_name: str
+    gsds: str
+
+
+@dataclass
+class VMinSearchRecord:
+    module: str
+    test_name: str
+    template: Optional[str]
+    execution_mode: Optional[str]
+    vmin_predict: Optional[str]
+    low_search: Optional[str]
+    hi_search: Optional[str]
+    gsds: Optional[str]
+    search_pin: Optional[str]
+    overshoot_recv: Optional[str]
+    vmin_pred_high: Optional[str]
+    search_result: Optional[float]
+
+
+@dataclass
+class ScoreboardEntry:
+    module: str
+    test_instance: str
+    base_number: Optional[int]
+    duplicate: Optional[int]
+    in_range: Optional[bool]
+    extra_info: Optional[str]
+
+
+@dataclass
 class IngestArtifact:
     tp_name: str
     git_hash: str

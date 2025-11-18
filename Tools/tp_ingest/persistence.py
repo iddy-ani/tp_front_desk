@@ -13,9 +13,12 @@ except ImportError:  # pragma: no cover - optional dependency
 
 from . import models
 from .serialization import (
+    cake_audit_entry_to_document,
     ingest_artifact_to_document,
     pas_record_to_document,
     plist_entry_to_document,
+    scoreboard_entry_to_document,
+    vmin_search_record_to_document,
 )
 
 
@@ -44,11 +47,17 @@ class MongoWriter(DatabaseWriter):
         collection: str = "ingest_artifacts",
         pas_collection: str = "pas_records",
         plist_collection: str = "plist_entries",
+        cake_collection: str = "cake_audit",
+        vmin_collection: str = "vmin_search",
+        scoreboard_collection: str = "scoreboard_entries",
     ) -> None:
         self._client = _build_client(uri)
         self._collection = self._client[db_name][collection]
         self._pas_collection = self._client[db_name][pas_collection]
         self._plist_collection = self._client[db_name][plist_collection]
+        self._cake_collection = self._client[db_name][cake_collection]
+        self._vmin_collection = self._client[db_name][vmin_collection]
+        self._scoreboard_collection = self._client[db_name][scoreboard_collection]
         self._is_mock = mongomock is not None and isinstance(self._client, mongomock.MongoClient)
         self._ensure_indexes()
 
@@ -84,6 +93,27 @@ class MongoWriter(DatabaseWriter):
         self._plist_collection.create_index(
             [("pattern_name", ASCENDING)], name="plist_pattern_idx"
         )
+        self._cake_collection.create_index(
+            [("tp_document_id", ASCENDING)], name="cake_tp_idx"
+        )
+        self._cake_collection.create_index(
+            [("domain_name", ASCENDING), ("shift_name", ASCENDING)],
+            name="cake_domain_shift_idx",
+        )
+        self._vmin_collection.create_index(
+            [("tp_document_id", ASCENDING)], name="vmin_tp_idx"
+        )
+        self._vmin_collection.create_index(
+            [("module", ASCENDING), ("test_name", ASCENDING)],
+            name="vmin_module_test_idx",
+        )
+        self._scoreboard_collection.create_index(
+            [("tp_document_id", ASCENDING)], name="scoreboard_tp_idx"
+        )
+        self._scoreboard_collection.create_index(
+            [("module", ASCENDING), ("test_instance", ASCENDING)],
+            name="scoreboard_module_test_idx",
+        )
 
     def write_pas_records(
         self, tp_name: str, git_hash: str, records: Iterable[models.PASRecord]
@@ -112,6 +142,48 @@ class MongoWriter(DatabaseWriter):
         self._plist_collection.delete_many({"tp_document_id": tp_document_id})
         if docs:
             self._plist_collection.insert_many(docs)
+        return len(docs)
+
+    def write_cake_audit_entries(
+        self, tp_name: str, git_hash: str, entries: Iterable[models.CakeAuditEntry]
+    ) -> int:
+        tp_document_id = f"{tp_name}:{git_hash}"
+        docs = []
+        for entry in entries:
+            doc = cake_audit_entry_to_document(entry)
+            doc["tp_document_id"] = tp_document_id
+            docs.append(doc)
+        self._cake_collection.delete_many({"tp_document_id": tp_document_id})
+        if docs:
+            self._cake_collection.insert_many(docs)
+        return len(docs)
+
+    def write_vmin_search_records(
+        self, tp_name: str, git_hash: str, records: Iterable[models.VMinSearchRecord]
+    ) -> int:
+        tp_document_id = f"{tp_name}:{git_hash}"
+        docs = []
+        for record in records:
+            doc = vmin_search_record_to_document(record)
+            doc["tp_document_id"] = tp_document_id
+            docs.append(doc)
+        self._vmin_collection.delete_many({"tp_document_id": tp_document_id})
+        if docs:
+            self._vmin_collection.insert_many(docs)
+        return len(docs)
+
+    def write_scoreboard_entries(
+        self, tp_name: str, git_hash: str, entries: Iterable[models.ScoreboardEntry]
+    ) -> int:
+        tp_document_id = f"{tp_name}:{git_hash}"
+        docs = []
+        for entry in entries:
+            doc = scoreboard_entry_to_document(entry)
+            doc["tp_document_id"] = tp_document_id
+            docs.append(doc)
+        self._scoreboard_collection.delete_many({"tp_document_id": tp_document_id})
+        if docs:
+            self._scoreboard_collection.insert_many(docs)
         return len(docs)
 
     def upsert_report(self, tp_name: str, git_hash: str, report: models.IntegrationReport) -> str:

@@ -14,6 +14,9 @@ class MongoSettings:
     collection: str
     pas_collection: str
     plist_collection: str
+    cake_collection: str
+    vmin_collection: str
+    scoreboard_collection: str
     tls: bool = True
 
     @classmethod
@@ -31,6 +34,9 @@ class MongoSettings:
         collection = os.environ.get("TPFD_MONGO_COLLECTION", "ingest_artifacts")
         pas_collection = os.environ.get("TPFD_MONGO_PAS_COLLECTION", "pas_records")
         plist_collection = os.environ.get("TPFD_MONGO_PLIST_COLLECTION", "plist_entries")
+        cake_collection = os.environ.get("TPFD_MONGO_CAKE_COLLECTION", "cake_audit")
+        vmin_collection = os.environ.get("TPFD_MONGO_VMIN_COLLECTION", "vmin_search")
+        scoreboard_collection = os.environ.get("TPFD_MONGO_SCOREBOARD_COLLECTION", "scoreboard_entries")
         tls = os.environ.get("TPFD_MONGO_TLS", "true").lower() in {"1", "true", "yes"}
         return cls(
             uri=uri,
@@ -38,6 +44,9 @@ class MongoSettings:
             collection=collection,
             pas_collection=pas_collection,
             plist_collection=plist_collection,
+            cake_collection=cake_collection,
+            vmin_collection=vmin_collection,
+            scoreboard_collection=scoreboard_collection,
             tls=tls,
         )
 

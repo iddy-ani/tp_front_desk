@@ -11,7 +11,14 @@ from pathlib import Path
 from typing import Any, Dict
 
 from tp_ingest.config import IngestSettings
-from tp_ingest.parsers import IntegrationReportParser, PASReportParser, PlistMasterParser
+from tp_ingest.parsers import (
+    CakeAuditParser,
+    IntegrationReportParser,
+    PASReportParser,
+    PlistMasterParser,
+    ScoreboardParser,
+    VMinSearchParser,
+)
 from tp_ingest.persistence import MongoWriter
 from tp_ingest import models
 
@@ -58,6 +65,12 @@ def main() -> None:
     pas_result = PASReportParser().parse(pas_path)
     plist_path = report_path.parent / "plist_master.csv"
     plist_result = PlistMasterParser().parse(plist_path)
+    cake_path = report_path.parent / "CAKEVADTLAudit.csv"
+    cake_result = CakeAuditParser().parse(cake_path)
+    vmin_path = report_path.parent / "VMinSearchAudit.csv"
+    vmin_result = VMinSearchParser().parse(vmin_path)
+    scoreboard_path = report_path.parent / "ScoreBoard_Report.csv"
+    scoreboard_result = ScoreboardParser().parse(scoreboard_path)
     payload: Dict[str, Any] = {
         "program": integration.program.__dict__,
         "environment": {
@@ -71,9 +84,19 @@ def main() -> None:
         "flow_table_count": len(integration.flow_tables),
         "dll_inventory_count": len(integration.dll_inventory),
         "dll_sample": [entry.__dict__ for entry in integration.dll_inventory[:5]],
-        "warnings": integration.warnings + pas_result.warnings + plist_result.warnings,
+        "warnings": (
+            integration.warnings
+            + pas_result.warnings
+            + plist_result.warnings
+            + cake_result.warnings
+            + vmin_result.warnings
+            + scoreboard_result.warnings
+        ),
         "pas_records_count": len(pas_result.records),
         "plist_entries_count": len(plist_result.entries),
+        "cake_audit_count": len(cake_result.entries),
+        "vmin_search_count": len(vmin_result.records),
+        "scoreboard_entries_count": len(scoreboard_result.entries),
     }
     if not args.no_persist:
         mongo_settings = settings.mongo
@@ -84,14 +107,25 @@ def main() -> None:
             mongo_settings.collection,
             mongo_settings.pas_collection,
             mongo_settings.plist_collection,
+            mongo_settings.cake_collection,
+            mongo_settings.vmin_collection,
+            mongo_settings.scoreboard_collection,
         )
         doc_id = writer.write_ingest_artifact(artifact)
         pas_rows = writer.write_pas_records(args.tp_name, args.git_hash, pas_result.records)
         plist_rows = writer.write_plist_entries(args.tp_name, args.git_hash, plist_result.entries)
+        cake_rows = writer.write_cake_audit_entries(args.tp_name, args.git_hash, cake_result.entries)
+        vmin_rows = writer.write_vmin_search_records(args.tp_name, args.git_hash, vmin_result.records)
+        scoreboard_rows = writer.write_scoreboard_entries(
+            args.tp_name, args.git_hash, scoreboard_result.entries
+        )
         writer.close()
         payload["mongo_doc_id"] = doc_id
         payload["pas_records_persisted"] = pas_rows
         payload["plist_entries_persisted"] = plist_rows
+        payload["cake_audit_persisted"] = cake_rows
+        payload["vmin_search_persisted"] = vmin_rows
+        payload["scoreboard_entries_persisted"] = scoreboard_rows
     else:
         payload["mongo_doc_id"] = "skipped"
 
