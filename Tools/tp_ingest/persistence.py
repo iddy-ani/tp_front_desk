@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Iterable
 
 from pymongo import ASCENDING, MongoClient
 
@@ -12,7 +12,7 @@ except ImportError:  # pragma: no cover - optional dependency
     mongomock = None
 
 from . import models
-from .serialization import ingest_artifact_to_document
+from .serialization import ingest_artifact_to_document, pas_record_to_document
 
 
 def _build_client(uri: str) -> MongoClient:
@@ -33,9 +33,16 @@ class DatabaseWriter:
 class MongoWriter(DatabaseWriter):
     """Thin wrapper that upserts ingestion documents into MongoDB."""
 
-    def __init__(self, uri: str, db_name: str, collection: str = "ingest_artifacts") -> None:
+    def __init__(
+        self,
+        uri: str,
+        db_name: str,
+        collection: str = "ingest_artifacts",
+        pas_collection: str = "pas_records",
+    ) -> None:
         self._client = _build_client(uri)
         self._collection = self._client[db_name][collection]
+        self._pas_collection = self._client[db_name][pas_collection]
         self._is_mock = mongomock is not None and isinstance(self._client, mongomock.MongoClient)
         self._ensure_indexes()
 
@@ -52,12 +59,34 @@ class MongoWriter(DatabaseWriter):
         if self._is_mock:
             return
 
-        index_specs = (
-            ([("tp_name", ASCENDING), ("git_hash", ASCENDING)], {"name": "tp_git_idx"}),
-            ([("report.dll_inventory.name", ASCENDING)], {"name": "dll_inventory_name_idx"}),
+        self._collection.create_index(
+            [("tp_name", ASCENDING), ("git_hash", ASCENDING)], name="tp_git_idx"
         )
-        for keys, options in index_specs:
-            self._collection.create_index(keys, **options)
+        self._collection.create_index(
+            [("report.dll_inventory.name", ASCENDING)], name="dll_inventory_name_idx"
+        )
+        self._pas_collection.create_index(
+            [("tp_document_id", ASCENDING)], name="pas_tp_idx"
+        )
+        self._pas_collection.create_index(
+            [("module_name", ASCENDING), ("instance_name", ASCENDING)],
+            name="pas_module_instance_idx",
+        )
+
+    def write_pas_records(
+        self, tp_name: str, git_hash: str, records: Iterable[models.PASRecord]
+    ) -> int:
+        """Replace PAS rows for the given TP revision."""
+        tp_document_id = f"{tp_name}:{git_hash}"
+        docs = []
+        for record in records:
+            doc = pas_record_to_document(record)
+            doc["tp_document_id"] = tp_document_id
+            docs.append(doc)
+        self._pas_collection.delete_many({"tp_document_id": tp_document_id})
+        if docs:
+            self._pas_collection.insert_many(docs)
+        return len(docs)
 
     def upsert_report(self, tp_name: str, git_hash: str, report: models.IntegrationReport) -> str:
         """Backwards-compatible helper for existing callers."""

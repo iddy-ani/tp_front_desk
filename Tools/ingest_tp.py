@@ -12,6 +12,7 @@ from typing import Any, Dict
 
 from tp_ingest.config import IngestSettings
 from tp_ingest.parsers import IntegrationReportParser
+from tp_ingest.parsers.pas import PASReportParser
 from tp_ingest.persistence import MongoWriter
 from tp_ingest import models
 
@@ -54,6 +55,8 @@ def main() -> None:
         raise FileNotFoundError(f"Integration report not found at {report_path}")
 
     integration = IntegrationReportParser().parse(report_path)
+    pas_path = report_path.parent / "PASReport.csv"
+    pas_result = PASReportParser().parse(pas_path)
     payload: Dict[str, Any] = {
         "program": integration.program.__dict__,
         "environment": {
@@ -67,15 +70,23 @@ def main() -> None:
         "flow_table_count": len(integration.flow_tables),
         "dll_inventory_count": len(integration.dll_inventory),
         "dll_sample": [entry.__dict__ for entry in integration.dll_inventory[:5]],
-        "warnings": integration.warnings,
+        "warnings": integration.warnings + pas_result.warnings,
+        "pas_records_count": len(pas_result.records),
     }
     if not args.no_persist:
         mongo_settings = settings.mongo
         artifact = models.IngestArtifact(tp_name=args.tp_name, git_hash=args.git_hash, report=integration)
-        writer = MongoWriter(mongo_settings.uri, mongo_settings.database, mongo_settings.collection)
+        writer = MongoWriter(
+            mongo_settings.uri,
+            mongo_settings.database,
+            mongo_settings.collection,
+            mongo_settings.pas_collection,
+        )
         doc_id = writer.write_ingest_artifact(artifact)
+        pas_rows = writer.write_pas_records(args.tp_name, args.git_hash, pas_result.records)
         writer.close()
         payload["mongo_doc_id"] = doc_id
+        payload["pas_records_persisted"] = pas_rows
     else:
         payload["mongo_doc_id"] = "skipped"
 

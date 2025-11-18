@@ -73,6 +73,38 @@ class DllEntry:
 
 
 @dataclass
+class PASRecord:
+    instance_name: str
+    status: str
+    bypass: Optional[str]
+    bins: Optional[str]
+    counters: Optional[str]
+    level: Optional[str]
+    timing: Optional[str]
+    plist: Optional[str]
+    monitor_pat_count: Optional[int]
+    kill_pat_count: Optional[int]
+    skipped_pat_count: Optional[int]
+    content_directory: Optional[str]
+    pattern_vrev: Optional[str]
+    test_type: Optional[str]
+    tp_options: Optional[str]
+    scrum: Optional[str]
+    module_name: Optional[str]
+    module_user: Optional[str]
+    test_category: Optional[str]
+    partition: Optional[str]
+    test_type_detail: Optional[str]
+    test_type_flag: Optional[str]
+    subflow: Optional[str]
+    pattern_ratio: Optional[str]
+    voltage_domain: Optional[str]
+    corner: Optional[str]
+    frequency: Optional[str]
+    instance_user: Optional[str]
+
+
+@dataclass
 class IngestArtifact:
     tp_name: str
     git_hash: str
