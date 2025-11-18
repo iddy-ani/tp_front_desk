@@ -5,6 +5,7 @@ from .plist_master import PlistMasterParser
 from .cake_vadt import CakeAuditParser
 from .vmin_search import VMinSearchParser
 from .scoreboard import ScoreboardParser
+from .setpoints import SetpointsParser
 
 __all__ = [
 	"IntegrationReportParser",
@@ -13,4 +14,5 @@ __all__ = [
 	"CakeAuditParser",
 	"VMinSearchParser",
 	"ScoreboardParser",
+	"SetpointsParser",
 ]

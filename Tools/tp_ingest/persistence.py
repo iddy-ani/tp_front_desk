@@ -17,7 +17,9 @@ from .serialization import (
     ingest_artifact_to_document,
     pas_record_to_document,
     plist_entry_to_document,
+    product_config_to_document,
     scoreboard_entry_to_document,
+    setpoint_entry_to_document,
     vmin_search_record_to_document,
 )
 
@@ -50,6 +52,8 @@ class MongoWriter(DatabaseWriter):
         cake_collection: str = "cake_audit",
         vmin_collection: str = "vmin_search",
         scoreboard_collection: str = "scoreboard_entries",
+        product_collection: str = "product_configs",
+        setpoints_collection: str = "setpoints",
     ) -> None:
         self._client = _build_client(uri)
         self._collection = self._client[db_name][collection]
@@ -58,6 +62,8 @@ class MongoWriter(DatabaseWriter):
         self._cake_collection = self._client[db_name][cake_collection]
         self._vmin_collection = self._client[db_name][vmin_collection]
         self._scoreboard_collection = self._client[db_name][scoreboard_collection]
+        self._product_collection = self._client[db_name][product_collection]
+        self._setpoints_collection = self._client[db_name][setpoints_collection]
         self._is_mock = mongomock is not None and isinstance(self._client, mongomock.MongoClient)
         self._ensure_indexes()
 
@@ -113,6 +119,14 @@ class MongoWriter(DatabaseWriter):
         self._scoreboard_collection.create_index(
             [("module", ASCENDING), ("test_instance", ASCENDING)],
             name="scoreboard_module_test_idx",
+        )
+        self._product_collection.create_index([("product_code", ASCENDING)], name="product_code_idx", unique=True)
+        self._setpoints_collection.create_index(
+            [("tp_document_id", ASCENDING)], name="setpoints_tp_idx"
+        )
+        self._setpoints_collection.create_index(
+            [("module", ASCENDING), ("test_instance", ASCENDING)],
+            name="setpoints_module_test_idx",
         )
 
     def write_pas_records(
@@ -185,6 +199,32 @@ class MongoWriter(DatabaseWriter):
         if docs:
             self._scoreboard_collection.insert_many(docs)
         return len(docs)
+
+    def write_setpoint_entries(
+        self, tp_name: str, git_hash: str, entries: Iterable[models.SetpointEntry]
+    ) -> int:
+        tp_document_id = f"{tp_name}:{git_hash}"
+        docs = []
+        for entry in entries:
+            doc = setpoint_entry_to_document(entry)
+            doc["tp_document_id"] = tp_document_id
+            docs.append(doc)
+        self._setpoints_collection.delete_many({"tp_document_id": tp_document_id})
+        if docs:
+            self._setpoints_collection.insert_many(docs)
+        return len(docs)
+
+    def upsert_product_config(self, config: models.ProductConfig) -> str:
+        if not config.product_code:
+            raise ValueError("Product config requires a ProductCode field before persistence")
+        doc = product_config_to_document(config)
+        doc["updated_at"] = datetime.now(timezone.utc)
+        self._product_collection.update_one(
+            {"product_code": config.product_code},
+            {"$set": doc},
+            upsert=True,
+        )
+        return config.product_code
 
     def upsert_report(self, tp_name: str, git_hash: str, report: models.IntegrationReport) -> str:
         """Backwards-compatible helper for existing callers."""

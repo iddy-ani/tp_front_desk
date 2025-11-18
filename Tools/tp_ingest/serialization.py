@@ -119,3 +119,26 @@ def scoreboard_entry_to_document(entry: models.ScoreboardEntry) -> Dict[str, Any
         "in_range": entry.in_range,
         "extra_info": entry.extra_info,
     }
+
+
+def setpoint_entry_to_document(entry: models.SetpointEntry) -> Dict[str, Any]:
+    return {
+        "module": entry.module,
+        "test_instance": entry.test_instance,
+        "method": entry.method,
+        "source_file": str(entry.source_file),
+        "values": entry.values,
+    }
+
+
+def product_config_to_document(config: models.ProductConfig) -> Dict[str, Any]:
+    return {
+        "product_code": config.product_code,
+        "product_name": config.product_name,
+        "network_path": config.network_path,
+        "latest_tp": config.latest_tp,
+        "number_of_releases": config.number_of_releases,
+        "releases": config.releases,
+        "last_run_date": config.last_run_date,
+        "additional_attributes": config.additional_attributes,
+    }

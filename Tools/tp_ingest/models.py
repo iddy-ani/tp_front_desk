@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -159,3 +159,45 @@ class IngestArtifact:
     tp_name: str
     git_hash: str
     report: IntegrationReport
+    metadata: Optional["TestProgramMetadata"] = None
+
+
+@dataclass
+class ProductConfig:
+    product_code: str
+    product_name: str
+    network_path: str
+    latest_tp: Optional[str] = None
+    number_of_releases: Optional[int] = None
+    releases: List[str] = field(default_factory=list)
+    last_run_date: Optional[str] = None
+    additional_attributes: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class SetpointEntry:
+    module: str
+    test_instance: str
+    method: str
+    source_file: Path
+    values: List[str] = field(default_factory=list)
+
+
+@dataclass
+class ArtifactReference:
+    name: str
+    relative_path: str
+    category: str
+    size_bytes: int
+
+
+@dataclass
+class TestProgramMetadata:
+    product_code: Optional[str]
+    product_name: Optional[str]
+    network_path: Optional[str]
+    flow_table_names: List[str] = field(default_factory=list)
+    dll_summary: List[str] = field(default_factory=list)
+    gsds_mappings: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    artifact_references: List[ArtifactReference] = field(default_factory=list)
+    setpoints: List[SetpointEntry] = field(default_factory=list)

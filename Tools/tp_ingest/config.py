@@ -17,6 +17,8 @@ class MongoSettings:
     cake_collection: str
     vmin_collection: str
     scoreboard_collection: str
+    product_collection: str
+    setpoints_collection: str
     tls: bool = True
 
     @classmethod
@@ -37,6 +39,8 @@ class MongoSettings:
         cake_collection = os.environ.get("TPFD_MONGO_CAKE_COLLECTION", "cake_audit")
         vmin_collection = os.environ.get("TPFD_MONGO_VMIN_COLLECTION", "vmin_search")
         scoreboard_collection = os.environ.get("TPFD_MONGO_SCOREBOARD_COLLECTION", "scoreboard_entries")
+        product_collection = os.environ.get("TPFD_MONGO_PRODUCT_COLLECTION", "product_configs")
+        setpoints_collection = os.environ.get("TPFD_MONGO_SETPOINT_COLLECTION", "setpoints")
         tls = os.environ.get("TPFD_MONGO_TLS", "true").lower() in {"1", "true", "yes"}
         return cls(
             uri=uri,
@@ -47,6 +51,8 @@ class MongoSettings:
             cake_collection=cake_collection,
             vmin_collection=vmin_collection,
             scoreboard_collection=scoreboard_collection,
+            product_collection=product_collection,
+            setpoints_collection=setpoints_collection,
             tls=tls,
         )
 

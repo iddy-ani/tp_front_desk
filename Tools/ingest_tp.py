@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from tp_ingest.config import IngestSettings
 from tp_ingest.parsers import (
@@ -17,10 +17,97 @@ from tp_ingest.parsers import (
     PASReportParser,
     PlistMasterParser,
     ScoreboardParser,
+    SetpointsParser,
     VMinSearchParser,
 )
 from tp_ingest.persistence import MongoWriter
 from tp_ingest import models
+from tp_ingest.product_config import find_product_config, load_product_configs
+
+
+IMPORTANT_ARTIFACTS = {
+    "Reports/Integration_Report.txt": "report",
+    "Reports/PASReport.csv": "report",
+    "Reports/PASReport_ModuleSummary.csv": "report",
+    "Reports/PASReport_PortLevel.csv": "report",
+    "Reports/ScoreBoard_Report.csv": "report",
+    "Reports/CAKEVADTLAudit.csv": "gsds",
+    "Reports/VMinSearchAudit.csv": "vmin",
+    "Reports/plist_master.csv": "plist",
+    "Reports/CAKE_DLLVersions.csv": "dll",
+    "Reports/StartItemList.csv": "flow",
+    "Reports/GitInfo.txt": "git",
+    "Reports/GitReportInfo.txt": "git",
+    "Reports/ExportPath.txt": "report",
+    "BaseLevels.tcg": "levels",
+    "BaseSpecs.usrv": "specs",
+    "EnvironmentFile.env": "env",
+}
+
+
+def collect_artifact_references(tp_dir: Path) -> List[models.ArtifactReference]:
+    references: List[models.ArtifactReference] = []
+    seen: set[str] = set()
+
+    def _register(path: Path, category: str) -> None:
+        rel_path = path.relative_to(tp_dir)
+        key = rel_path.as_posix()
+        if key in seen:
+            return
+        size = 0
+        try:
+            size = path.stat().st_size
+        except OSError:
+            size = 0
+        references.append(
+            models.ArtifactReference(
+                name=path.name,
+                relative_path=key,
+                category=category,
+                size_bytes=size,
+            )
+        )
+        seen.add(key)
+
+    for relative, category in IMPORTANT_ARTIFACTS.items():
+        candidate = tp_dir / relative
+        if candidate.exists():
+            _register(candidate, category)
+
+    reports_dir = tp_dir / "Reports"
+    if reports_dir.exists():
+        for child in reports_dir.iterdir():
+            if child.is_file():
+                _register(child, "report-extra")
+
+    return references
+
+
+def build_tp_metadata(
+    product: Optional[models.ProductConfig],
+    integration: models.IntegrationReport,
+    cake_entries: List[models.CakeAuditEntry],
+    setpoints: List[models.SetpointEntry],
+    artifacts: List[models.ArtifactReference],
+) -> models.TestProgramMetadata:
+    flow_names = [table.name for table in integration.flow_tables]
+    dll_summary = [f"{entry.name}:{entry.version}" for entry in integration.dll_inventory]
+    gsds_map: Dict[str, Dict[str, str]] = {}
+    for entry in cake_entries:
+        domain = entry.domain_name or "unknown"
+        bucket = gsds_map.setdefault(domain, {})
+        bucket[entry.shift_name] = entry.gsds
+
+    return models.TestProgramMetadata(
+        product_code=product.product_code if product else None,
+        product_name=product.product_name if product else None,
+        network_path=product.network_path if product else None,
+        flow_table_names=flow_names,
+        dll_summary=dll_summary,
+        gsds_mappings=gsds_map,
+        artifact_references=artifacts,
+        setpoints=setpoints,
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -44,6 +131,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip writing results to MongoDB (defaults to persisting).",
     )
+    parser.add_argument(
+        "--product-config",
+        type=Path,
+        default=None,
+        help="Optional path to Products.json (defaults to repo root / Products.json).",
+    )
+    parser.add_argument(
+        "--product-code",
+        default=None,
+        help="Optional product code override when selecting the product config entry.",
+    )
     return parser
 
 
@@ -52,13 +150,36 @@ def main() -> None:
     args = parser.parse_args()
     settings = IngestSettings.from_env(repo_root=args.repo_root)
 
+    tp_dir = settings.tp_root / args.tp_name
     report_path = args.report
     if report_path is None:
-        tp_dir = settings.tp_root / args.tp_name
         report_path = tp_dir / "Reports" / "Integration_Report.txt"
+    else:
+        report_path = report_path.resolve()
+        tp_dir = report_path.parent.parent
     report_path = report_path.resolve()
+    if args.report is None:
+        tp_dir = tp_dir.resolve()
+    else:
+        tp_dir = report_path.parent.parent
     if not report_path.exists():
         raise FileNotFoundError(f"Integration report not found at {report_path}")
+
+    product_config_path = args.product_config or (settings.repo_root / "Products.json")
+    product_config: Optional[models.ProductConfig] = None
+    product_warning: Optional[str] = None
+    if product_config_path:
+        try:
+            configs = load_product_configs(product_config_path)
+            product_config = find_product_config(configs, args.tp_name, args.product_code)
+            if product_config is None:
+                product_warning = (
+                    f"No product config entry matched TP {args.tp_name} in {product_config_path}"
+                )
+        except FileNotFoundError:
+            product_warning = f"Product config file not found at {product_config_path}"
+        except ValueError as exc:
+            product_warning = f"Unable to parse product config file {product_config_path}: {exc}"
 
     integration = IntegrationReportParser().parse(report_path)
     pas_path = report_path.parent / "PASReport.csv"
@@ -71,6 +192,15 @@ def main() -> None:
     vmin_result = VMinSearchParser().parse(vmin_path)
     scoreboard_path = report_path.parent / "ScoreBoard_Report.csv"
     scoreboard_result = ScoreboardParser().parse(scoreboard_path)
+    setpoints_result = SetpointsParser().parse(tp_dir / "Modules")
+    artifacts = collect_artifact_references(tp_dir)
+    metadata = build_tp_metadata(
+        product=product_config,
+        integration=integration,
+        cake_entries=cake_result.entries,
+        setpoints=setpoints_result.entries,
+        artifacts=artifacts,
+    )
     payload: Dict[str, Any] = {
         "program": integration.program.__dict__,
         "environment": {
@@ -84,23 +214,41 @@ def main() -> None:
         "flow_table_count": len(integration.flow_tables),
         "dll_inventory_count": len(integration.dll_inventory),
         "dll_sample": [entry.__dict__ for entry in integration.dll_inventory[:5]],
-        "warnings": (
-            integration.warnings
-            + pas_result.warnings
-            + plist_result.warnings
-            + cake_result.warnings
-            + vmin_result.warnings
-            + scoreboard_result.warnings
-        ),
         "pas_records_count": len(pas_result.records),
         "plist_entries_count": len(plist_result.entries),
         "cake_audit_count": len(cake_result.entries),
         "vmin_search_count": len(vmin_result.records),
         "scoreboard_entries_count": len(scoreboard_result.entries),
+        "setpoint_entries_count": len(setpoints_result.entries),
+        "artifact_reference_count": len(artifacts),
+        "product": {
+            "product_code": metadata.product_code,
+            "product_name": metadata.product_name,
+            "network_path": metadata.network_path,
+        },
+        "flow_table_names": metadata.flow_table_names,
+        "dll_summary": metadata.dll_summary,
+        "gsds_mappings": metadata.gsds_mappings,
     }
+    warnings: List[str] = []
+    warnings.extend(integration.warnings)
+    warnings.extend(pas_result.warnings)
+    warnings.extend(plist_result.warnings)
+    warnings.extend(cake_result.warnings)
+    warnings.extend(vmin_result.warnings)
+    warnings.extend(scoreboard_result.warnings)
+    warnings.extend(setpoints_result.warnings)
+    if product_warning:
+        warnings.append(product_warning)
+    payload["warnings"] = warnings
     if not args.no_persist:
         mongo_settings = settings.mongo
-        artifact = models.IngestArtifact(tp_name=args.tp_name, git_hash=args.git_hash, report=integration)
+        artifact = models.IngestArtifact(
+            tp_name=args.tp_name,
+            git_hash=args.git_hash,
+            report=integration,
+            metadata=metadata,
+        )
         writer = MongoWriter(
             mongo_settings.uri,
             mongo_settings.database,
@@ -110,6 +258,8 @@ def main() -> None:
             mongo_settings.cake_collection,
             mongo_settings.vmin_collection,
             mongo_settings.scoreboard_collection,
+            mongo_settings.product_collection,
+            mongo_settings.setpoints_collection,
         )
         doc_id = writer.write_ingest_artifact(artifact)
         pas_rows = writer.write_pas_records(args.tp_name, args.git_hash, pas_result.records)
@@ -119,6 +269,10 @@ def main() -> None:
         scoreboard_rows = writer.write_scoreboard_entries(
             args.tp_name, args.git_hash, scoreboard_result.entries
         )
+        setpoint_rows = writer.write_setpoint_entries(args.tp_name, args.git_hash, setpoints_result.entries)
+        product_doc_id: Optional[str] = None
+        if product_config:
+            product_doc_id = writer.upsert_product_config(product_config)
         writer.close()
         payload["mongo_doc_id"] = doc_id
         payload["pas_records_persisted"] = pas_rows
@@ -126,6 +280,9 @@ def main() -> None:
         payload["cake_audit_persisted"] = cake_rows
         payload["vmin_search_persisted"] = vmin_rows
         payload["scoreboard_entries_persisted"] = scoreboard_rows
+        payload["setpoint_entries_persisted"] = setpoint_rows
+        if product_doc_id:
+            payload["product_doc_id"] = product_doc_id
     else:
         payload["mongo_doc_id"] = "skipped"
 
