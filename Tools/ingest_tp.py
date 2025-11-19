@@ -14,10 +14,13 @@ from tp_ingest.config import IngestSettings
 from tp_ingest.parsers import (
     CakeAuditParser,
     IntegrationReportParser,
+    ModuleSummaryParser,
+    PortResultsParser,
     PASReportParser,
     PlistMasterParser,
     ScoreboardParser,
     SetpointsParser,
+    FlowMapParser,
     VMinSearchParser,
 )
 from tp_ingest.persistence import MongoWriter
@@ -185,6 +188,12 @@ def run_ingestion(
     vmin_result = VMinSearchParser().parse(vmin_path)
     scoreboard_path = report_path.parent / "ScoreBoard_Report.csv"
     scoreboard_result = ScoreboardParser().parse(scoreboard_path)
+    module_summary_path = report_path.parent / "PASReport_ModuleSummary.csv"
+    module_summary_result = ModuleSummaryParser().parse(module_summary_path)
+    port_results_path = report_path.parent / "PASReport_PortLevel.csv"
+    port_results_result = PortResultsParser().parse(port_results_path)
+    flow_map_path = report_path.parent / "StartItemList.csv"
+    flow_map_result = FlowMapParser().parse(flow_map_path)
     setpoints_result = SetpointsParser().parse(tp_dir / "Modules")
     artifacts = collect_artifact_references(tp_dir)
     metadata = build_tp_metadata(
@@ -214,6 +223,9 @@ def run_ingestion(
         "cake_audit_count": len(cake_result.entries),
         "vmin_search_count": len(vmin_result.records),
         "scoreboard_entries_count": len(scoreboard_result.entries),
+        "module_summary_entries_count": len(module_summary_result.entries),
+        "port_result_entries_count": len(port_results_result.entries),
+        "flow_map_entries_count": len(flow_map_result.entries),
         "setpoint_entries_count": len(setpoints_result.entries),
         "artifact_reference_count": len(artifacts),
         "product": {
@@ -232,6 +244,9 @@ def run_ingestion(
     warnings.extend(cake_result.warnings)
     warnings.extend(vmin_result.warnings)
     warnings.extend(scoreboard_result.warnings)
+    warnings.extend(module_summary_result.warnings)
+    warnings.extend(port_results_result.warnings)
+    warnings.extend(flow_map_result.warnings)
     warnings.extend(setpoints_result.warnings)
     if product_warning:
         warnings.append(product_warning)
@@ -249,32 +264,86 @@ def run_ingestion(
             mongo_settings.uri,
             mongo_settings.database,
             mongo_settings.collection,
-            mongo_settings.pas_collection,
+            mongo_settings.test_instances_collection,
             mongo_settings.plist_collection,
             mongo_settings.cake_collection,
             mongo_settings.vmin_collection,
             mongo_settings.scoreboard_collection,
             mongo_settings.product_collection,
             mongo_settings.setpoints_collection,
+            mongo_settings.module_summary_collection,
+            mongo_settings.port_results_collection,
+            mongo_settings.flow_map_collection,
+            mongo_settings.artifacts_collection,
         )
         doc_id = writer.write_ingest_artifact(artifact)
-        pas_rows = writer.write_pas_records(tp_name, resolved_git_hash, pas_result.records)
+        product_code_value = metadata.product_code
+        module_lookup = writer.write_module_summary_entries(
+            tp_name,
+            resolved_git_hash,
+            module_summary_result.entries,
+            product_code=product_code_value,
+        )
+        instance_lookup = writer.write_test_instances(
+            tp_name,
+            resolved_git_hash,
+            pas_result.records,
+            product_code=product_code_value,
+            module_lookup=module_lookup,
+        )
+        port_rows = writer.write_port_results(
+            tp_name,
+            resolved_git_hash,
+            port_results_result.entries,
+            product_code=product_code_value,
+            module_lookup=module_lookup,
+            instance_lookup=instance_lookup,
+        )
+        flow_map_rows = writer.write_flow_map_entries(
+            tp_name,
+            resolved_git_hash,
+            flow_map_result.entries,
+            product_code=product_code_value,
+            instance_lookup=instance_lookup,
+        )
         plist_rows = writer.write_plist_entries(tp_name, resolved_git_hash, plist_result.entries)
         cake_rows = writer.write_cake_audit_entries(tp_name, resolved_git_hash, cake_result.entries)
         vmin_rows = writer.write_vmin_search_records(tp_name, resolved_git_hash, vmin_result.records)
-        scoreboard_rows = writer.write_scoreboard_entries(tp_name, resolved_git_hash, scoreboard_result.entries)
-        setpoint_rows = writer.write_setpoint_entries(tp_name, resolved_git_hash, setpoints_result.entries)
+        scoreboard_rows = writer.write_scoreboard_entries(
+            tp_name,
+            resolved_git_hash,
+            scoreboard_result.entries,
+            product_code=product_code_value,
+            instance_lookup=instance_lookup,
+        )
+        setpoint_rows = writer.write_setpoint_entries(
+            tp_name,
+            resolved_git_hash,
+            setpoints_result.entries,
+            product_code=product_code_value,
+        )
+        artifact_rows = writer.write_artifact_documents(
+            tp_name,
+            resolved_git_hash,
+            artifacts,
+            product_code=product_code_value,
+        )
         product_doc_id: Optional[str] = None
         if product_config:
             product_doc_id = writer.upsert_product_config(product_config)
         writer.close()
         payload["mongo_doc_id"] = doc_id
-        payload["pas_records_persisted"] = pas_rows
+        payload["test_instances_persisted"] = len(pas_result.records)
+        payload["pas_records_persisted"] = payload["test_instances_persisted"]
         payload["plist_entries_persisted"] = plist_rows
         payload["cake_audit_persisted"] = cake_rows
         payload["vmin_search_persisted"] = vmin_rows
         payload["scoreboard_entries_persisted"] = scoreboard_rows
         payload["setpoint_entries_persisted"] = setpoint_rows
+        payload["module_summary_entries_persisted"] = len(module_summary_result.entries)
+        payload["port_result_entries_persisted"] = port_rows
+        payload["flow_map_entries_persisted"] = flow_map_rows
+        payload["artifact_documents_persisted"] = artifact_rows
         if product_doc_id:
             payload["product_doc_id"] = product_doc_id
     else:

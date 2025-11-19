@@ -155,6 +155,67 @@ class ScoreboardEntry:
 
 
 @dataclass
+class ModuleSummaryEntry:
+    module_name: str
+    total_tests: Optional[int]
+    total_tests_run: Optional[int]
+    total_kill: Optional[int]
+    total_edc: Optional[int]
+    total_monitor: Optional[int]
+    total_float: Optional[int]
+    total_bypassed: Optional[int]
+    always_bypassed: Optional[int]
+    percent_kill: Optional[float]
+    percent_kill_monitor: Optional[float]
+    run_rate: Optional[float]
+    kill_rate: Optional[float]
+    bypass_rate: Optional[float]
+    source_path: Optional[Path] = None
+
+
+@dataclass
+class PortResultRow:
+    instance_name_port: str
+    status: Optional[str]
+    bypass: Optional[str]
+    bin: Optional[int]
+    hb: Optional[int]
+    sb: Optional[int]
+    counter: Optional[int]
+    plist: Optional[str]
+    monitor_pat_count: Optional[int]
+    kill_pat_count: Optional[int]
+    skipped_pat_count: Optional[int]
+    content_directory: Optional[str]
+    pattern_vrev: Optional[str]
+    test_type: Optional[str]
+    tp_options: Optional[str]
+    scrum: Optional[str]
+    module_name: Optional[str]
+    module_user: Optional[str]
+    test_category: Optional[str]
+    partition: Optional[str]
+    test_type_flag: Optional[str]
+    subflow: Optional[str]
+    pattern_ratio: Optional[str]
+    voltage_domain: Optional[str]
+    corner: Optional[str]
+    frequency: Optional[str]
+    port_owner: Optional[str]
+    port: Optional[str]
+    instance_name: Optional[str] = None
+    module_summary_name: Optional[str] = None
+
+
+@dataclass
+class FlowMapEntry:
+    module: str
+    dutflow: str
+    instance: str
+    sequence_index: int
+
+
+@dataclass
 class IngestArtifact:
     tp_name: str
     git_hash: str
@@ -189,6 +250,8 @@ class ArtifactReference:
     relative_path: str
     category: str
     size_bytes: int
+    sha256: Optional[str] = None
+    exists_on_disk: bool = True
 
 
 @dataclass

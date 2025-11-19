@@ -6,6 +6,9 @@ from .cake_vadt import CakeAuditParser
 from .vmin_search import VMinSearchParser
 from .scoreboard import ScoreboardParser
 from .setpoints import SetpointsParser
+from .module_summary import ModuleSummaryParser
+from .port_results import PortResultsParser
+from .flow_map import FlowMapParser
 
 __all__ = [
 	"IntegrationReportParser",
@@ -15,4 +18,7 @@ __all__ = [
 	"VMinSearchParser",
 	"ScoreboardParser",
 	"SetpointsParser",
+	"ModuleSummaryParser",
+	"PortResultsParser",
+	"FlowMapParser",
 ]

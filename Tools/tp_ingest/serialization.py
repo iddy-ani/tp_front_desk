@@ -142,3 +142,78 @@ def product_config_to_document(config: models.ProductConfig) -> Dict[str, Any]:
         "last_run_date": config.last_run_date,
         "additional_attributes": config.additional_attributes,
     }
+
+
+def module_summary_entry_to_document(entry: models.ModuleSummaryEntry) -> Dict[str, Any]:
+    return {
+        "module_name": entry.module_name,
+        "total_tests": entry.total_tests,
+        "total_tests_run": entry.total_tests_run,
+        "total_kill": entry.total_kill,
+        "total_edc": entry.total_edc,
+        "total_monitor": entry.total_monitor,
+        "total_float": entry.total_float,
+        "total_bypassed": entry.total_bypassed,
+        "always_bypassed": entry.always_bypassed,
+        "percent_kill": entry.percent_kill,
+        "percent_kill_monitor": entry.percent_kill_monitor,
+        "run_rate": entry.run_rate,
+        "kill_rate": entry.kill_rate,
+        "bypass_rate": entry.bypass_rate,
+        "source_path": str(entry.source_path) if entry.source_path else None,
+    }
+
+
+def port_result_row_to_document(row: models.PortResultRow) -> Dict[str, Any]:
+    return {
+        "instance_name_port": row.instance_name_port,
+        "status": row.status,
+        "bypass": row.bypass,
+        "bin": row.bin,
+        "hb": row.hb,
+        "sb": row.sb,
+        "counter": row.counter,
+        "plist": row.plist,
+        "monitor_pat_count": row.monitor_pat_count,
+        "kill_pat_count": row.kill_pat_count,
+        "skipped_pat_count": row.skipped_pat_count,
+        "content_directory": row.content_directory,
+        "pattern_vrev": row.pattern_vrev,
+        "test_type": row.test_type,
+        "tp_options": row.tp_options,
+        "scrum": row.scrum,
+        "module_name": row.module_name,
+        "module_user": row.module_user,
+        "test_category": row.test_category,
+        "partition": row.partition,
+        "test_type_flag": row.test_type_flag,
+        "subflow": row.subflow,
+        "pattern_ratio": row.pattern_ratio,
+        "voltage_domain": row.voltage_domain,
+        "corner": row.corner,
+        "frequency": row.frequency,
+        "port_owner": row.port_owner,
+        "port": row.port,
+        "instance_name": row.instance_name,
+        "module_summary_name": row.module_summary_name,
+    }
+
+
+def flow_map_entry_to_document(entry: models.FlowMapEntry) -> Dict[str, Any]:
+    return {
+        "module": entry.module,
+        "dutflow": entry.dutflow,
+        "instance": entry.instance,
+        "sequence_index": entry.sequence_index,
+    }
+
+
+def artifact_reference_to_document(entry: models.ArtifactReference) -> Dict[str, Any]:
+    return {
+        "name": entry.name,
+        "relative_path": entry.relative_path,
+        "category": entry.category,
+        "size_bytes": entry.size_bytes,
+        "sha256": entry.sha256,
+        "exists_on_disk": entry.exists_on_disk,
+    }
