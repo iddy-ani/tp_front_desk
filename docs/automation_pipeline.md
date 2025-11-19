@@ -58,3 +58,7 @@ C:/Users/ianimash/source/repos/venvs/tp_front_desk/Scripts/python.exe Tools/moni
 - Exit code is `1` when new alerts are found, letting schedulers flag the run or dispatch email. Exit `0` means no new failures.
 - The script keeps its own pointer (`state/alert_monitor_state.json`) so each alert is sent exactly once; pass `--reset` if you purposely want to replay history.
 - Use `--verbose` while testing to see each command execution before wiring it into your alerting pipeline.
+
+## Config service
+
+Use `Tools/config_service.py` to keep `Products.json` in sync with the latest ingested revisions and to validate `NetworkPath` entries. See `docs/config_service.md` for end-to-end instructions and sample commands.
