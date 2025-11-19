@@ -5,9 +5,10 @@ import argparse
 import json
 import logging
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from tp_ingest.config import IngestSettings
 from tp_ingest.product_config import load_product_configs
@@ -15,6 +16,12 @@ from tp_ingest.product_config import load_product_configs
 from ingest_tp import run_ingestion
 
 StateDict = Dict[str, Dict[str, Dict[str, Dict[str, str]]]]
+FAILURE_STATUSES = {
+    "network-unavailable",
+    "copy-timeout",
+    "copy-failed",
+    "ingest-failed",
+}
 
 
 def _now_iso() -> str:
@@ -37,6 +44,13 @@ def load_state(path: Path) -> StateDict:
 def save_state(path: Path, state: StateDict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+
+def _append_json_line(path: Path, payload: Dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload))
+        handle.write("\n")
 
 
 def _sorted_directories(network_path: Path) -> List[Path]:
@@ -177,6 +191,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Timeout (seconds) for each copy operation.",
     )
     parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=3,
+        help="Maximum number of attempts per TP (includes the initial try).",
+    )
+    parser.add_argument(
+        "--retry-delay",
+        type=int,
+        default=30,
+        help="Seconds to wait between retries when a copy or ingest step fails.",
+    )
+    parser.add_argument(
         "--no-persist",
         action="store_true",
         help="Skip Mongo persistence when triggering ingestion (dry-run on database).",
@@ -190,6 +216,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Reprocess TP folders even if they were recorded in the state file.",
+    )
+    parser.add_argument(
+        "--log-file",
+        type=Path,
+        default=default_root / "logs" / "daily_scanner.log",
+        help="Path to append structured job records (JSON lines).",
+    )
+    parser.add_argument(
+        "--alerts-file",
+        type=Path,
+        default=default_root / "state" / "daily_scanner_alerts.jsonl",
+        help="File where failed ingests are recorded for downstream alerting.",
     )
     parser.add_argument(
         "--verbose",
@@ -216,12 +254,31 @@ def main() -> None:
     copy_script = args.copy_script.resolve()
     if not copy_script.exists():
         raise FileNotFoundError(f"Copy script not found at {copy_script}")
+    log_path = args.log_file.resolve() if args.log_file else None
+    alerts_path = args.alerts_file.resolve() if args.alerts_file else None
+    max_retries = max(1, args.max_retries)
+    retry_delay = max(0, args.retry_delay)
 
     configs = load_product_configs(product_config_path)
     filter_codes = {code.upper() for code in args.product_codes} if args.product_codes else None
     state = load_state(args.state_file.resolve())
 
-    results: List[Dict[str, object]] = []
+    results: List[Dict[str, Any]] = []
+    alerts: List[Dict[str, Any]] = []
+
+    def record_entry(entry: Dict[str, Any], *, final: bool) -> None:
+        payload = dict(entry)
+        payload.setdefault("timestamp", _now_iso())
+        payload["final_attempt"] = final
+        if log_path:
+            _append_json_line(log_path, payload)
+        if final:
+            results.append(payload)
+            if payload.get("status") in FAILURE_STATUSES:
+                alerts.append(payload)
+                if alerts_path:
+                    _append_json_line(alerts_path, payload)
+
     total_ingest_attempts = 0
     for config in configs:
         product_code = (config.product_code or "UNKNOWN").upper()
@@ -232,13 +289,14 @@ def main() -> None:
             directories = _sorted_directories(network_path)
         except FileNotFoundError as exc:
             logging.error("Skipping %s: %s", product_code, exc)
-            results.append(
+            record_entry(
                 {
                     "product_code": product_code,
                     "product_name": config.product_name,
                     "status": "network-unavailable",
                     "error": str(exc),
-                }
+                },
+                final=True,
             )
             continue
         if args.max_network_scan is not None:
@@ -255,69 +313,98 @@ def main() -> None:
             if args.limit is not None and total_ingest_attempts >= args.limit:
                 break
             tp_name = directory.name
-            entry: Dict[str, object] = {
+            entry_base: Dict[str, Any] = {
                 "product_code": product_code,
                 "product_name": config.product_name,
                 "tp_name": tp_name,
                 "network_path": str(directory),
             }
             if args.dry_run:
-                entry["status"] = "dry-run"
-                results.append(entry)
+                dry_entry = dict(entry_base)
+                dry_entry["status"] = "dry-run"
+                record_entry(dry_entry, final=True)
                 continue
 
             total_ingest_attempts += 1
             dest_path = settings.tp_root / tp_name
-            try:
-                copy_result = _run_copy_script(
-                    copy_script,
-                    source=directory,
-                    destination=dest_path,
-                    timeout=args.copy_timeout,
-                )
-            except subprocess.TimeoutExpired:
-                entry["status"] = "copy-timeout"
-                results.append(entry)
-                logging.error("Copy timed out for %s", tp_name)
-                continue
-            if copy_result.returncode != 0:
-                entry["status"] = "copy-failed"
-                entry["copy_exit_code"] = copy_result.returncode
-                entry["copy_stdout"] = copy_result.stdout.strip()
-                entry["copy_stderr"] = copy_result.stderr.strip()
-                results.append(entry)
-                logging.error("Copy failed for %s (exit %s)", tp_name, copy_result.returncode)
-                continue
+            attempt = 0
+            success = False
+            while attempt < max_retries:
+                attempt += 1
+                attempt_entry = dict(entry_base)
+                attempt_entry["attempt"] = attempt
+                attempt_entry["max_retries"] = max_retries
+                try:
+                    copy_result = _run_copy_script(
+                        copy_script,
+                        source=directory,
+                        destination=dest_path,
+                        timeout=args.copy_timeout,
+                    )
+                except subprocess.TimeoutExpired:
+                    attempt_entry["status"] = "copy-timeout"
+                    final = attempt >= max_retries
+                    record_entry(attempt_entry, final=final)
+                    logging.error("Copy timed out for %s (attempt %s)", tp_name, attempt)
+                    if final or retry_delay == 0:
+                        break
+                    time.sleep(retry_delay)
+                    continue
+                if copy_result.returncode != 0:
+                    attempt_entry["status"] = "copy-failed"
+                    attempt_entry["copy_exit_code"] = copy_result.returncode
+                    attempt_entry["copy_stdout"] = copy_result.stdout.strip()
+                    attempt_entry["copy_stderr"] = copy_result.stderr.strip()
+                    final = attempt >= max_retries
+                    record_entry(attempt_entry, final=final)
+                    logging.error(
+                        "Copy failed for %s (attempt %s, exit %s)",
+                        tp_name,
+                        attempt,
+                        copy_result.returncode,
+                    )
+                    if final or retry_delay == 0:
+                        break
+                    time.sleep(retry_delay)
+                    continue
 
-            try:
-                payload = run_ingestion(
-                    tp_name=tp_name,
-                    settings=settings,
-                    git_hash=None,
-                    no_persist=args.no_persist,
-                    product_config_path=product_config_path,
-                    product_code=config.product_code,
-                )
-            except Exception as exc:  # pylint: disable=broad-except
-                entry["status"] = "ingest-failed"
-                entry["error"] = str(exc)
-                results.append(entry)
-                logging.exception("Ingestion failed for %s", tp_name)
-                continue
+                try:
+                    payload = run_ingestion(
+                        tp_name=tp_name,
+                        settings=settings,
+                        git_hash=None,
+                        no_persist=args.no_persist,
+                        product_config_path=product_config_path,
+                        product_code=config.product_code,
+                    )
+                except Exception as exc:  # pylint: disable=broad-except
+                    attempt_entry["status"] = "ingest-failed"
+                    attempt_entry["error"] = str(exc)
+                    final = attempt >= max_retries
+                    record_entry(attempt_entry, final=final)
+                    logging.exception("Ingestion failed for %s (attempt %s)", tp_name, attempt)
+                    if final or retry_delay == 0:
+                        break
+                    time.sleep(retry_delay)
+                    continue
 
-            entry["status"] = "ingested" if not args.no_persist else "parsed"
-            entry["git_hash"] = payload.get("git_hash")
-            entry["mongo_doc_id"] = payload.get("mongo_doc_id")
-            entry["warnings"] = payload.get("warnings", [])
-            results.append(entry)
-            if not args.no_persist:
-                _update_product_state(
-                    state,
-                    product_code,
-                    tp_name,
-                    git_hash=entry.get("git_hash"),
-                    mongo_id=entry.get("mongo_doc_id"),
-                )
+                attempt_entry["status"] = "ingested" if not args.no_persist else "parsed"
+                attempt_entry["git_hash"] = payload.get("git_hash")
+                attempt_entry["mongo_doc_id"] = payload.get("mongo_doc_id")
+                attempt_entry["warnings"] = payload.get("warnings", [])
+                record_entry(attempt_entry, final=True)
+                success = True
+                if not args.no_persist:
+                    _update_product_state(
+                        state,
+                        product_code,
+                        tp_name,
+                        git_hash=attempt_entry.get("git_hash"),
+                        mongo_id=attempt_entry.get("mongo_doc_id"),
+                    )
+                break
+            if not success:
+                logging.error("Max retries reached for %s", tp_name)
         if args.limit is not None and total_ingest_attempts >= args.limit:
             break
 
@@ -327,10 +414,14 @@ def main() -> None:
     summary = {
         "run_started": _now_iso(),
         "results": results,
+        "alerts": alerts,
         "ingest_attempts": total_ingest_attempts,
         "dry_run": args.dry_run,
         "persisted": not args.no_persist,
         "state_file": str(args.state_file.resolve()),
+        "log_file": str(log_path) if log_path else None,
+        "alerts_file": str(alerts_path) if alerts_path else None,
+        "max_retries": max_retries,
     }
     print(json.dumps(summary, indent=2))
 
