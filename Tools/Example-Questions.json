@@ -1,0 +1,11 @@
+{
+    "Q1":"What is the current test program for PantherLake CPU-U",
+    "Q2":"What tests does it have",
+    "Q3":"Does it have HVQK water fall flow",
+    "Q4":"What does it look like",
+    "Q5":"Does it have VCC continuity in the flow and where",
+    "Q7":"What are the settings of the test class VminTC throughout the flow",
+    "Q8":"Is PantherLake CPU-U running array repair",
+    "Q9":"Is it doing hot repair",
+    "Q10":"Is there much content in the SDT flow"
+}

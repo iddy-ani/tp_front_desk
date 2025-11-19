@@ -1,0 +1,498 @@
+"""
+title: Test Program Intelligence
+author: Idriss Animashaun
+version: 0.1.0
+license: MIT
+description: Answer common PDE questions about HDMT test programs by reading the normalized Mongo collections.
+requirements: pymongo>=4.6.0
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+import re
+from collections import Counter, defaultdict
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+
+from pymongo import MongoClient
+from pymongo.collection import Collection
+from pymongo.errors import PyMongoError
+from pydantic import BaseModel, Field
+
+
+# Reusable status emitter so Open WebUI can stream progress updates
+def _safe_getenv(key: str, default: str = "") -> str:
+    value = os.environ.get(key)
+    return value if value is not None else default
+
+
+class EventEmitter:
+    def __init__(self, event_emitter: Optional[Callable[[dict], Any]] = None):
+        self._event_emitter = event_emitter
+
+    async def emit(self, description: str, status: str = "in_progress", done: bool = False):
+        if self._event_emitter:
+            await self._event_emitter(
+                {
+                    "type": "status",
+                    "data": {
+                        "status": status,
+                        "description": description,
+                        "done": done,
+                    },
+                }
+            )
+
+    async def progress(self, description: str):
+        await self.emit(description, "in_progress", False)
+
+    async def success(self, description: str):
+        await self.emit(description, "success", True)
+
+    async def error(self, description: str):
+        await self.emit(description, "error", True)
+
+
+@dataclass
+class TPContext:
+    tp_name: str
+    git_hash: str
+    tp_document_id: str
+    product_code: Optional[str]
+    product_name: Optional[str]
+    ingested_at: Optional[datetime]
+    metadata: Dict[str, Any]
+
+
+class QuestionClassifier:
+    MAPPINGS: List[Tuple[str, Tuple[str, ...]]] = [
+        ("current_tp", ("current test program", "latest tp", "current tp")),
+        ("list_tests", ("what tests", "list of tests", "tests does it have")),
+        ("hvqk_flow", ("hvqk", "water fall", "waterfall")),
+        ("tp_snapshot", ("what does it look like", "overview", "snapshot")),
+        ("vcc_continuity", ("vcc continuity", "continuity")),
+        ("setpoints", ("vMintc", "settings", "test class")),
+        ("array_repair", ("array repair", "running array", "repair flows")),
+        ("hot_repair", ("hot repair", "hot-repair", "hotrepair")),
+        ("sdt_flow", ("sdt flow", "sdt content")),
+    ]
+
+    @classmethod
+    def classify(cls, question: str) -> str:
+        normalized = question.lower().strip()
+        for label, keywords in cls.MAPPINGS:
+            if any(keyword in normalized for keyword in keywords):
+                return label
+        return "fallback"
+
+
+class Tools:
+    class Valves(BaseModel):
+        mongo_uri: str = Field(
+            default_factory=lambda: _safe_getenv("TPFD_MONGO_URI"),
+            description="Primary Mongo connection string",
+        )
+        mongo_database: str = Field(
+            default=_safe_getenv("TPFD_MONGO_DB", "tpfrontdesk"),
+            description="Mongo database name",
+        )
+        ingest_collection: str = Field(
+            default=_safe_getenv("TPFD_MONGO_COLLECTION", "ingest_artifacts"),
+            description="Collection containing ingest artifacts",
+        )
+        module_summary_collection: str = Field(
+            default=_safe_getenv("TPFD_MONGO_MODULE_SUMMARY_COLLECTION", "module_summary"),
+            description="Collection containing per-module PAS summaries",
+        )
+        test_instances_collection: str = Field(
+            default=_safe_getenv("TPFD_MONGO_TEST_INSTANCES_COLLECTION", "test_instances"),
+            description="Collection storing PAS instances",
+        )
+        port_results_collection: str = Field(
+            default=_safe_getenv("TPFD_MONGO_PORT_RESULTS_COLLECTION", "port_results"),
+            description="Collection storing PAS port data",
+        )
+        flow_map_collection: str = Field(
+            default=_safe_getenv("TPFD_MONGO_FLOW_MAP_COLLECTION", "flow_map"),
+            description="Collection storing StartItemList entries",
+        )
+        setpoints_collection: str = Field(
+            default=_safe_getenv("TPFD_MONGO_SETPOINT_COLLECTION", "setpoints"),
+            description="Collection storing setpoint metadata",
+        )
+        artifacts_collection: str = Field(
+            default=_safe_getenv("TPFD_MONGO_ARTIFACTS_COLLECTION", "artifacts"),
+            description="Collection storing artifact references",
+        )
+        product_collection: str = Field(
+            default=_safe_getenv("TPFD_MONGO_PRODUCT_COLLECTION", "product_configs"),
+            description="Collection storing product state",
+        )
+        max_test_instance_rows: int = Field(
+            default=250,
+            ge=25,
+            le=2000,
+            description="Maximum test instances to sample when answering questions",
+        )
+        max_flow_rows: int = Field(
+            default=150,
+            ge=25,
+            le=1000,
+            description="Maximum flow map rows to inspect per question",
+        )
+        default_product_code: str = Field(
+            default="",
+            description="Fallback product code when the question omits it",
+        )
+        default_tp_name: str = Field(
+            default="",
+            description="Fallback TP name when a specific revision is required",
+        )
+
+    class UserValves(BaseModel):
+        mongo_uri: str = Field(default="", description="Override Mongo connection URI")
+        mongo_database: str = Field(default="", description="Override database name")
+        product_code: str = Field(
+            default="", description="Preferred product code if not provided in the prompt"
+        )
+        tp_name: str = Field(default="", description="Preferred TP name if not provided")
+
+    def __init__(self):
+        self.valves = self.Valves()
+        self._mongo_client: Optional[MongoClient] = None
+
+    # Connection helpers -----------------------------------------------------------------
+    def _get_mongo_client(self, user_valves: Optional[UserValves] = None) -> Optional[MongoClient]:
+        uri = (user_valves.mongo_uri if user_valves and user_valves.mongo_uri else self.valves.mongo_uri).strip()
+        if not uri:
+            return None
+        if self._mongo_client is None:
+            self._mongo_client = MongoClient(uri)
+        return self._mongo_client
+
+    def _get_collection(self, client: MongoClient, name: str) -> Collection:
+        return client[self.valves.mongo_database][name]
+
+    # Context resolution ------------------------------------------------------------------
+    def _resolve_context(
+        self,
+        ingest_collection: Collection,
+        product_code: Optional[str],
+        tp_name: Optional[str],
+    ) -> TPContext:
+        filters: Dict[str, Any] = {}
+        if tp_name:
+            filters["tp_name"] = tp_name.strip()
+        if product_code:
+            filters["product.product_code"] = product_code.strip()
+        cursor = ingest_collection.find(filters).sort("ingested_at", -1)
+        doc = cursor.next() if cursor else None
+        if doc is None:
+            raise ValueError(
+                "Unable to locate an ingest record. Provide a valid product code or TP name that has been ingested."
+            )
+        metadata = doc.get("metadata", {}) or {}
+        product_blob = doc.get("product", {}) or {}
+        return TPContext(
+            tp_name=doc.get("tp_name", "unknown"),
+            git_hash=doc.get("git_hash", "unknown"),
+            tp_document_id=doc["_id"],
+            product_code=product_blob.get("product_code") or metadata.get("product_code") or product_code,
+            product_name=product_blob.get("product_name") or metadata.get("product_name"),
+            ingested_at=doc.get("ingested_at"),
+            metadata=metadata,
+        )
+
+    # Query helpers ----------------------------------------------------------------------
+    def _fetch_product_state(self, product_collection: Collection, product_code: Optional[str]) -> Optional[dict]:
+        if not product_code:
+            return None
+        return product_collection.find_one({"product_code": product_code})
+
+    def _sample_test_instances(self, test_collection: Collection, ctx: TPContext) -> List[dict]:
+        cursor = (
+            test_collection.find({"tp_document_id": ctx.tp_document_id}, {"module_name": 1, "instance_name": 1, "status": 1})
+            .limit(self.valves.max_test_instance_rows)
+        )
+        return list(cursor)
+
+    def _sample_flow_rows(self, flow_collection: Collection, ctx: TPContext, keyword: Optional[str] = None) -> List[dict]:
+        filters: Dict[str, Any] = {"tp_document_id": ctx.tp_document_id}
+        if keyword:
+            filters["$or"] = [
+                {"module": {"$regex": keyword, "$options": "i"}},
+                {"dutflow": {"$regex": keyword, "$options": "i"}},
+                {"instance": {"$regex": keyword, "$options": "i"}},
+            ]
+        return list(
+            flow_collection.find(filters, {"module": 1, "dutflow": 1, "instance": 1, "sequence_index": 1})
+            .limit(self.valves.max_flow_rows)
+        )
+
+    def _fetch_module_summary(self, module_collection: Collection, ctx: TPContext) -> List[dict]:
+        return list(
+            module_collection.find({"tp_document_id": ctx.tp_document_id}, {"module_name": 1, "total_tests": 1, "total_kill": 1, "percent_kill": 1})
+        )
+
+    def _fetch_setpoints(self, setpoints_collection: Collection, ctx: TPContext, keyword: str) -> List[dict]:
+        regex = {"$regex": keyword, "$options": "i"}
+        filters = {
+            "tp_document_id": ctx.tp_document_id,
+            "$or": [
+                {"method": regex},
+                {"module": regex},
+                {"test_instance": regex},
+            ],
+        }
+        return list(
+            setpoints_collection.find(filters, {"module": 1, "test_instance": 1, "method": 1, "values": 1}).limit(50)
+        )
+
+    def _fetch_artifact_summary(self, artifacts_collection: Collection, ctx: TPContext) -> Dict[str, int]:
+        pipeline = [
+            {"$match": {"tp_document_id": ctx.tp_document_id}},
+            {"$group": {"_id": "$category", "count": {"$sum": 1}}},
+        ]
+        summary: Dict[str, int] = {}
+        for row in artifacts_collection.aggregate(pipeline):
+            summary[row["_id"] or "unknown"] = row["count"]
+        return summary
+
+    # Answer generators -----------------------------------------------------------------
+    def _format_current_tp_answer(self, ctx: TPContext, product_state: Optional[dict]) -> str:
+        ingested = ctx.ingested_at.isoformat() if ctx.ingested_at else "unknown"
+        product_line = f"Product: {ctx.product_name or 'unknown'} ({ctx.product_code or 'n/a'})"
+        product_details = []
+        if product_state:
+            if product_state.get("latest_tp"):
+                product_details.append(f"Configured latest TP: {product_state['latest_tp']}")
+            if product_state.get("network_path"):
+                product_details.append(f"Network path: {product_state['network_path']}")
+            if product_state.get("number_of_releases"):
+                product_details.append(f"Tracked releases: {product_state['number_of_releases']}")
+        flow_tables = ctx.metadata.get("flow_table_names", [])
+        summary = [
+            f"✅ Current ingest for {ctx.tp_name}",
+            product_line,
+            f"Git hash: {ctx.git_hash}",
+            f"Ingested: {ingested}",
+        ]
+        if product_details:
+            summary.append("Product config: " + "; ".join(product_details))
+        if flow_tables:
+            summary.append("Flow tables: " + ", ".join(flow_tables[:8]))
+        return "\n".join(summary)
+
+    def _format_test_list_answer(self, ctx: TPContext, tests: List[dict]) -> str:
+        if not tests:
+            return "I could not find PAS instances for this TP."
+        module_buckets: Dict[str, List[str]] = defaultdict(list)
+        status_counter = Counter()
+        for row in tests:
+            module = (row.get("module_name") or "unknown").upper()
+            instance = row.get("instance_name") or "unnamed"
+            module_buckets[module].append(instance)
+            status_counter[row.get("status", "UNKNOWN")] += 1
+        lines = [f"📋 Sample tests for {ctx.tp_name} ({len(tests)} rows scanned)"]
+        for module, instances in list(module_buckets.items())[:8]:
+            preview = ", ".join(instances[:5])
+            lines.append(f"- {module}: {preview}{'…' if len(instances) > 5 else ''}")
+        status_summary = ", ".join(f"{status}:{count}" for status, count in status_counter.most_common(5))
+        lines.append(f"Status mix: {status_summary}")
+        return "\n".join(lines)
+
+    def _format_flow_answer(self, ctx: TPContext, flows: List[dict], keyword: str, description: str) -> str:
+        if not flows:
+            return f"No {description} references matched '{keyword}'."
+        lines = [f"🔍 {description.title()} hits for '{keyword}' ({len(flows)} results)"]
+        for row in flows[:8]:
+            lines.append(
+                f"- Module {row.get('module')} | Flow {row.get('dutflow')} | Instance {row.get('instance')} (index {row.get('sequence_index')})"
+            )
+        return "\n".join(lines)
+
+    def _format_setpoint_answer(self, ctx: TPContext, matches: List[dict], keyword: str) -> str:
+        if not matches:
+            return f"No setpoints mention '{keyword}'."
+        lines = [f"⚙️ Setpoint coverage for '{keyword}'"]
+        for row in matches[:8]:
+            values = ", ".join(row.get("values", [])[:5])
+            lines.append(
+                f"- Module {row.get('module')} | Instance {row.get('test_instance')} | Method {row.get('method')} | Values {values or 'n/a'}"
+            )
+        return "\n".join(lines)
+
+    def _format_module_focus(self, ctx: TPContext, modules: List[dict], keyword: str, description: str) -> str:
+        matches = [row for row in modules if keyword in (row.get("module_name") or "").lower()]
+        if not matches:
+            return f"No modules hint at {description}."
+        lines = [f"🛠️ {description.title()} modules"]
+        for row in matches[:6]:
+            lines.append(
+                f"- {row.get('module_name')} | Tests {row.get('total_tests')} | Kill {row.get('total_kill')} | Kill% {row.get('percent_kill')}"
+            )
+        return "\n".join(lines)
+
+    def _format_snapshot(self, ctx: TPContext, modules: List[dict], artifacts: Dict[str, int]) -> str:
+        top_modules = sorted(modules, key=lambda row: row.get("total_tests", 0) or 0, reverse=True)[:5]
+        module_lines = [
+            f"- {row.get('module_name')} (tests={row.get('total_tests')}, kill={row.get('total_kill')}, kill%={row.get('percent_kill')})"
+            for row in top_modules
+        ]
+        artifact_lines = [f"{category}:{count}" for category, count in artifacts.items()]
+        return "\n".join(
+            [
+                f"📊 Snapshot for {ctx.tp_name}",
+                "Top modules:",
+                *module_lines,
+                "Artifacts:",
+                ", ".join(artifact_lines) or "No artifacts tracked",
+            ]
+        )
+
+    # Main entrypoint --------------------------------------------------------------------
+    async def answer_tp_question(
+        self,
+        question: str,
+        product_code: str = "",
+        tp_name: str = "",
+        __event_emitter__: Optional[Callable[[dict], Any]] = None,
+        __user__: Optional[dict] = None,
+    ) -> str:
+        emitter = EventEmitter(__event_emitter__)
+        if not question.strip():
+            await emitter.error("Please provide a question so I know what to retrieve.")
+            return "Provide a question about the test program (e.g., 'What is the current test program?')."
+
+        user_valves = self.UserValves()
+        client = self._get_mongo_client(user_valves)
+        if client is None:
+            await emitter.error("Mongo connection unavailable. Update the mongo_uri valve or set TPFD_MONGO_URI.")
+            return "Mongo connection is not configured."
+
+        product_code = product_code or user_valves.product_code or self.valves.default_product_code
+        tp_name = tp_name or user_valves.tp_name or self.valves.default_tp_name
+
+        ingest_collection = self._get_collection(client, self.valves.ingest_collection)
+        classification = QuestionClassifier.classify(question)
+
+        try:
+            ctx = self._resolve_context(ingest_collection, product_code, tp_name)
+        except (StopIteration, ValueError) as exc:
+            await emitter.error(str(exc))
+            return str(exc)
+
+        await emitter.progress(f"Resolved context: {ctx.tp_name} ({ctx.product_code or 'unknown product'})")
+
+        module_collection = self._get_collection(client, self.valves.module_summary_collection)
+        test_collection = self._get_collection(client, self.valves.test_instances_collection)
+        flow_collection = self._get_collection(client, self.valves.flow_map_collection)
+        port_collection = self._get_collection(client, self.valves.port_results_collection)
+        setpoints_collection = self._get_collection(client, self.valves.setpoints_collection)
+        artifacts_collection = self._get_collection(client, self.valves.artifacts_collection)
+        product_collection = self._get_collection(client, self.valves.product_collection)
+
+        answer_lines: List[str] = []
+
+        try:
+            if classification == "current_tp":
+                product_state = self._fetch_product_state(product_collection, ctx.product_code)
+                answer_lines.append(self._format_current_tp_answer(ctx, product_state))
+
+            elif classification == "list_tests":
+                tests = self._sample_test_instances(test_collection, ctx)
+                answer_lines.append(self._format_test_list_answer(ctx, tests))
+
+            elif classification == "hvqk_flow":
+                flows = self._sample_flow_rows(flow_collection, ctx, keyword="hvqk")
+                if not flows:
+                    flows = self._sample_flow_rows(flow_collection, ctx, keyword="water")
+                answer_lines.append(
+                    self._format_flow_answer(ctx, flows, "HVQK", "HVQK/Waterfall flow content")
+                )
+
+            elif classification == "tp_snapshot":
+                modules = self._fetch_module_summary(module_collection, ctx)
+                artifact_summary = self._fetch_artifact_summary(artifacts_collection, ctx)
+                answer_lines.append(self._format_snapshot(ctx, modules, artifact_summary))
+
+            elif classification == "vcc_continuity":
+                flows = self._sample_flow_rows(flow_collection, ctx, keyword="vcc")
+                tests = self._sample_test_instances(test_collection, ctx)
+                matches = [
+                    row
+                    for row in tests
+                    if "vcc" in (row.get("instance_name") or "").lower()
+                    and "cont" in (row.get("instance_name") or "").lower()
+                ]
+                lines = [self._format_flow_answer(ctx, flows, "VCC", "VCC continuity flows")]
+                if matches:
+                    lines.append(
+                        "PAS instances: "
+                        + ", ".join(f"{row.get('module_name')}::{row.get('instance_name')}" for row in matches[:6])
+                    )
+                answer_lines.extend(lines)
+
+            elif classification == "setpoints":
+                matches = self._fetch_setpoints(setpoints_collection, ctx, "VMIN")
+                answer_lines.append(self._format_setpoint_answer(ctx, matches, "Vmin"))
+
+            elif classification == "array_repair":
+                modules = self._fetch_module_summary(module_collection, ctx)
+                answer_lines.append(self._format_module_focus(ctx, modules, "repair", "array repair"))
+
+            elif classification == "hot_repair":
+                tests = self._sample_test_instances(test_collection, ctx)
+                hot = [
+                    row
+                    for row in tests
+                    if "hot" in (row.get("instance_name") or "").lower() or "hot" in (row.get("module_name") or "").lower()
+                ]
+                if hot:
+                    answer_lines.append(
+                        "🔥 Hot repair instances: "
+                        + ", ".join(f"{row.get('module_name')}::{row.get('instance_name')}" for row in hot[:6])
+                    )
+                else:
+                    answer_lines.append("No hot repair instances detected in the sampled PAS data.")
+
+            elif classification == "sdt_flow":
+                flows = self._sample_flow_rows(flow_collection, ctx, keyword="sdt")
+                if not flows:
+                    flows = self._sample_flow_rows(flow_collection, ctx)
+                answer_lines.append(
+                    self._format_flow_answer(ctx, flows, "SDT", "SDT flow content")
+                )
+
+            else:
+                modules = self._fetch_module_summary(module_collection, ctx)
+                tests = self._sample_test_instances(test_collection, ctx)
+                summary = self._format_snapshot(ctx, modules, self._fetch_artifact_summary(artifacts_collection, ctx))
+                answer_lines.append(summary)
+                answer_lines.append(self._format_test_list_answer(ctx, tests))
+
+            result = "\n\n".join(answer_lines) if answer_lines else "I could not build a response."
+            await emitter.success("Answer ready")
+            return result
+        except PyMongoError as exc:
+            await emitter.error(f"Mongo query failed: {exc}")
+            return f"Mongo query failed: {exc}"
+        except Exception as exc:  # pragma: no cover - defensive coding
+            await emitter.error(str(exc))
+            return str(exc)
+
+
+if __name__ == "__main__":  # pragma: no cover - manual smoke test
+    tool = Tools()
+
+    async def _demo():
+        answer = await tool.answer_tp_question(
+            "What is the current test program for PantherLake?",
+            product_code=os.environ.get("TPFD_DEMO_PRODUCT", "8PXM"),
+        )
+        print(answer)
+
+    asyncio.run(_demo())
