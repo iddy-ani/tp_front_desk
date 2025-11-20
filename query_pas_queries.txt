@@ -1,0 +1,1 @@
+& C:/Users/ianimash/source/repos/venvs/tp_front_desk/Scripts/python.exe query_pas.py Scrum ModuleName -F Scrum=TPI -F ModuleName=VCC -F --table

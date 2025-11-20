@@ -1,0 +1,426 @@
+{
+    "1":{
+        "Q1":"What is the current test program for PantherLake CPU-U",
+        "Answer":"The current test program for PantherLake CPU-U is PTUSDJXA1H21G402546.",
+        "Source":"Products.json",
+        "Methodology": "In Products.json look for the config with the value for where key ProductName is PantherLake CPU-U. Then read the value for LatestTP. If it is empty then tell the user that no latest tp has be set for this program, contact expertgpt@intel.com for support"
+    },
+    "2":{
+        "Q2":"What tests does it have",
+        "Answer":"""PantherLake CPU-U includes a variety of tests such as functional tests, performance benchmarks, thermal assessments, and power consumption evaluations. If you would like specific test details, please let me know which flow/modules you are interested in. Here are the Flow & Modules present in the latest test program:
+        Flows(30 entries):
+            1: INIT
+            2: BEGIN
+            3: PREHVQK
+            4: STRESS
+            5: SDTBEGIN
+            6: SDTEND
+            7: POSTHVQK
+            8: END
+            9: ENDTFM
+            10: ENDXFM
+            11: START
+            12: FMAX
+            13: SDTSTART
+            14: STARTFAILFLOW
+            15: FINAL
+            16: RETURN
+            17: LOTSTARTFLOW
+            18: TESTPLANSTARTFLOW
+            19: TESTPLANENDFLOW
+            20: LOTENDFLOW
+            21: SDTFINAL
+            22: FAILFLOW
+            23: ALARM
+            24: MAIN
+            25: SDTALARM
+            26: BIN
+            27: SDTBIN
+            28: SDTENDTFM
+            29: SDTENDXFM
+            30: DUTCHANGEFLOW
+            
+            Modules (43 entries):
+                1: ARR_ATOM
+                2: ARR_CCF
+                3: ARR_COMMON
+                4: ARR_CORE
+                5: ARR_DIM
+                6: ARR_NPU
+                7: ARR_SOC
+                8: CLK_DCM
+                9: CLK_LJPLL
+                10: CLK_START
+                11: FUN_ATOM
+                12: FUN_CORE
+                13: FUN_RESET
+                14: IO_D2D
+                15: MIO_DDR
+                16: PTH_BGREF
+                17: PTH_CEP
+                18: PTH_DIODE
+                19: PTH_DLVR
+                20: PTH_DTS
+                21: PTH_POWER
+                22: PTH_SOAK
+                23: SCN_ATOM
+                24: SCN_CCF
+                25: SCN_CORE
+                26: SCN_DIM
+                27: SCN_NPU
+                28: SCN_UNCORE
+                29: SIO_BSCAN
+                30: SIO_HPTP
+                31: TPI_ADTL
+                32: TPI_BASE
+                33: TPI_BIN
+                34: TPI_DFF
+                35: TPI_EDM
+                36: TPI_FUSE
+                37: TPI_HVQK
+                38: TPI_POWER
+                39: TPI_RECOVERY
+                40: TPI_SIU
+                41: TPI_UPM
+                42: TPI_VCC
+                43: TPI_VIPR""",
+        "Source":"PasReport from LatestTP in Products.json",
+        "Methodology": "Using the LatestTP value from Products.json, access the corresponding PasReport to extract unique Flows (The SubFlow column in the PASReport.csv) and Modules (The unique combination of Scrum and ModuleName joined with an underscore columns in the PASReport.csv e.g. Scrum_ModuleName (FUN_CORE)) associated with the test program. Compile and return this information to the user so that they can understand the test coverage and select which flows/modules to explore further."
+    },
+    "3":{
+        "Q3":"I am interested in test for the SCN_CORE module in the PREHVQK flow.",
+        "Answer":"""In the PREHVQK flow for the SCN_CORE module, the following tests are conducted:
+            ATSPEED_CORE0_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            ATSPEED_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CHAIN_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            DIAG_CORE0_HRY_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CHAIN_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            DPORT_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            ATSPEED_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CTRL_CORE0_AUX_K_PREHVQK_X_X_X_X_SPOFI_FABCHECK
+            CTRL_CORE0_SAMPLE_E_PREHVQK_X_X_X_X_SPOFI_SAMPLER
+            ATSPEED_CORE1_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            ATSPEED_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CHAIN_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            DIAG_CORE1_HRY_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CHAIN_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            DPORT_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            ATSPEED_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CTRL_CORE1_AUX_K_PREHVQK_X_X_X_X_SPOFI_FABCHECK
+            CTRL_CORE1_SAMPLE_E_PREHVQK_X_X_X_X_SPOFI_SAMPLER
+            ATSPEED_CORE2_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            ATSPEED_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CHAIN_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            DIAG_CORE2_HRY_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CHAIN_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            DPORT_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            ATSPEED_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CTRL_CORE2_AUX_K_PREHVQK_X_X_X_X_SPOFI_FABCHECK
+            CTRL_CORE2_SAMPLE_E_PREHVQK_X_X_X_X_SPOFI_SAMPLER
+            ATSPEED_CORE3_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            ATSPEED_CORE3_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CHAIN_CORE3_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            DIAG_CORE3_HRY_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CHAIN_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            DPORT_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            ATSPEED_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CTRL_CORE3_AUX_K_PREHVQK_X_X_X_X_SPOFI_FABCHECK
+            CTRL_CORE3_SAMPLE_E_PREHVQK_X_X_X_X_SPOFI_SAMPLER
+            STUCKAT_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            STUCKAT_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            STUCKAT_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            STUCKAT_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            STUCKAT_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            STUCKAT_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            STUCKAT_CORE3_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            STUCKAT_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            CTRL_X_PATMOD_K_PREHVQK_X_X_X_X_RESET_FREQUENCY
+            STUCKAT_CORE0_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            CHAIN_CORE0_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            STUCKAT_CORE1_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            CHAIN_CORE1_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            STUCKAT_CORE2_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            CHAIN_CORE2_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            STUCKAT_CORE3_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            CHAIN_CORE3_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            CTRL_X_UF_K_PREHVQK_X_X_X_X_SETUP
+            CTRL_X_SCREEN_K_PREHVQK_X_X_X_X_RESET_GSDS
+            CTRL_X_SCREEN_K_PREHVQK_X_X_X_X_SETUPSTRESSBYPASS
+            CTRL_X_SCREEN_K_PREHVQK_X_X_X_X_VMIN_PREDICT
+            CTRL_X_VMIN_K_PREHVQK_X_X_X_X_SCN_CORE_LS_PRED
+            CTRL_X_UF_K_PREHVQK_X_X_X_X_VBUMP_RPT
+            """,
+        "Source":"PasReport from LatestTP in Products.json",
+        "Methodology": "Using the LatestTP value from Products.json, access the corresponding PasReport to filter and extract tests specifically for the Scrum:SCN, ModuleName:CORE within the SubFlow:PREHVQK. Compile the lists of unique tests (The InstanceName column in the pas report) and return this information to the user so that they can understand the specific tests conducted in this module and flow. You can then ask them if they want to know specific details of a certain test of a number of tests.",
+        "RawData": """InstanceName
+            SCN_CORE::ATSPEED_CORE0_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::ATSPEED_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CHAIN_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::DIAG_CORE0_HRY_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CHAIN_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::DPORT_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::ATSPEED_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CTRL_CORE0_AUX_K_PREHVQK_X_X_X_X_SPOFI_FABCHECK
+            SCN_CORE::CTRL_CORE0_SAMPLE_E_PREHVQK_X_X_X_X_SPOFI_SAMPLER
+            SCN_CORE::ATSPEED_CORE1_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::ATSPEED_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CHAIN_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::DIAG_CORE1_HRY_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CHAIN_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::DPORT_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::ATSPEED_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CTRL_CORE1_AUX_K_PREHVQK_X_X_X_X_SPOFI_FABCHECK
+            SCN_CORE::CTRL_CORE1_SAMPLE_E_PREHVQK_X_X_X_X_SPOFI_SAMPLER
+            SCN_CORE::ATSPEED_CORE2_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::ATSPEED_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CHAIN_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::DIAG_CORE2_HRY_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CHAIN_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::DPORT_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::ATSPEED_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CTRL_CORE2_AUX_K_PREHVQK_X_X_X_X_SPOFI_FABCHECK
+            SCN_CORE::CTRL_CORE2_SAMPLE_E_PREHVQK_X_X_X_X_SPOFI_SAMPLER
+            SCN_CORE::ATSPEED_CORE3_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::ATSPEED_CORE3_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CHAIN_CORE3_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::DIAG_CORE3_HRY_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CHAIN_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::DPORT_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::ATSPEED_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CTRL_CORE3_AUX_K_PREHVQK_X_X_X_X_SPOFI_FABCHECK
+            SCN_CORE::CTRL_CORE3_SAMPLE_E_PREHVQK_X_X_X_X_SPOFI_SAMPLER
+            SCN_CORE::STUCKAT_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::STUCKAT_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::STUCKAT_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::STUCKAT_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::STUCKAT_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::STUCKAT_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::STUCKAT_CORE3_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::STUCKAT_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR
+            SCN_CORE::CTRL_X_PATMOD_K_PREHVQK_X_X_X_X_RESET_FREQUENCY
+            SCN_CORE::STUCKAT_CORE0_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::CHAIN_CORE0_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::STUCKAT_CORE1_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::CHAIN_CORE1_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::STUCKAT_CORE2_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::CHAIN_CORE2_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::STUCKAT_CORE3_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::CHAIN_CORE3_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE
+            SCN_CORE::CTRL_X_UF_K_PREHVQK_X_X_X_X_SETUP
+            SCN_CORE::CTRL_X_SCREEN_K_PREHVQK_X_X_X_X_RESET_GSDS
+            SCN_CORE::CTRL_X_SCREEN_K_PREHVQK_X_X_X_X_SETUPSTRESSBYPASS
+            SCN_CORE::CTRL_X_SCREEN_K_PREHVQK_X_X_X_X_VMIN_PREDICT
+            SCN_CORE::CTRL_X_VMIN_K_PREHVQK_X_X_X_X_SCN_CORE_LS_PRED
+            SCN_CORE::CTRL_X_UF_K_PREHVQK_X_X_X_X_VBUMP_RPT
+            """,
+    },
+    "4":{
+        "Q4":"Can you provide more details on all ATSPEED tests?",
+        "Answer":"""The ATSPEED tests in the PREHVQK flow for the SCN_CORE module are designed to evaluate the speed and performance characteristics of the CPU cores under various conditions. Here are the details of each ATSPEED test:
+        | InstanceName | STATUS | Bypass | Bins | Counters | LEVEL | TIMING | PLIST | MonitorPatCount | KILLPatCount | SkippedPatCount | Content Directory | PatternVREV | TestType | TpOptions | Scrum | ModuleName | ModuleUser | TestCategory | Partition | TestType.1 | TestTypeFlag | SubFlow | PatternRatio | VoltageDomain | Corner | Frequency | InstanceUser |
+        | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+        | SCN_CORE::ATSPEED_CORE0_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Kill |  | 47001000|47000016|47000018|47000019 | 47001000|47000016|47000018|47000019 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core0_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list | 0 | 1113 | 0 | Supersedes | Supersedes | VminTC |  | SCN | CORE |  | ATSPEED | CORE0 | VMIN | K | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR_HPTPBASE |
+        | SCN_CORE::ATSPEED_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Monitor |  | ||| | 47000020|47000022|47000023|47000024 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core0_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list | 1113 | 0 | 0 | Supersedes | Supersedes | PrimeScanHRYSSNTestMethod |  | SCN | CORE |  | ATSPEED | CORE0 | HRY | K | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR |
+        | SCN_CORE::ATSPEED_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | EDC |  | | | 47000030|47000032 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core0_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list | 5543 | 0 | 0 | Supersedes | Supersedes | PrimeScanSPOFITestMethod |  | SCN | CORE |  | ATSPEED | CORE0 | SPOFI | E | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR |   
+        | SCN_CORE::ATSPEED_CORE1_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Kill |  | 47011000|47010016|47010018|47010019 | 47011000|47010016|47010018|47010019 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core1_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list | 0 | 1113 | 0 | Supersedes | Supersedes | VminTC |  | SCN | CORE |  | ATSPEED | CORE1 | VMIN | K | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR_HPTPBASE |
+        | SCN_CORE::ATSPEED_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Monitor |  | ||| | 47010020|47010022|47010023|47010024 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core1_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list | 1113 | 0 | 0 | Supersedes | Supersedes | PrimeScanHRYSSNTestMethod |  | SCN | CORE |  | ATSPEED | CORE1 | HRY | K | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR |
+        | SCN_CORE::ATSPEED_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | EDC |  | | | 47010030|47010032 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core1_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list | 5543 | 0 | 0 | Supersedes | Supersedes | PrimeScanSPOFITestMethod |  | SCN | CORE |  | ATSPEED | CORE1 | SPOFI | E | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR |   
+        | SCN_CORE::ATSPEED_CORE2_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Kill |  | 47021000|47020016|47020018|47020019 | 47021000|47020016|47020018|47020019 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core2_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list | 0 | 1113 | 0 | Supersedes | Supersedes | VminTC |  | SCN | CORE |  | ATSPEED | CORE2 | VMIN | K | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR_HPTPBASE |
+        | SCN_CORE::ATSPEED_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Monitor |  | ||| | 47020020|47020022|47020023|47020024 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core2_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list | 1113 | 0 | 0 | Supersedes | Supersedes | PrimeScanHRYSSNTestMethod |  | SCN | CORE |  | ATSPEED | CORE2 | HRY | K | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR |
+        | SCN_CORE::ATSPEED_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | EDC |  | | | 47020030|47020032 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core2_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list | 5543 | 0 | 0 | Supersedes | Supersedes | PrimeScanSPOFITestMethod |  | SCN | CORE |  | ATSPEED | CORE2 | SPOFI | E | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR |   
+        | SCN_CORE::ATSPEED_CORE3_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Kill |  | 47031000|47030016|47030018|47030019 | 47031000|47030016|47030018|47030019 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core3_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list | 0 | 1113 | 0 | Supersedes | Supersedes | VminTC |  | SCN | CORE |  | ATSPEED | CORE3 | VMIN | K | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR_HPTPBASE |
+        | SCN_CORE::ATSPEED_CORE3_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Monitor |  | ||| | 47030020|47030022|47030023|47030024 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core3_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list | 1113 | 0 | 0 | Supersedes | Supersedes | PrimeScanHRYSSNTestMethod |  | SCN | CORE |  | ATSPEED | CORE3 | HRY | K | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR |
+        | SCN_CORE::ATSPEED_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | EDC |  | | | 47030030|47030032 | SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | core_core3_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list | 5543 | 0 | 0 | Supersedes | Supersedes | PrimeScanSPOFITestMethod |  | SCN | CORE |  | ATSPEED | CORE3 | SPOFI | E | PREHVQK | N | VCCIA | NOM | LFM | 0800_POR |""",
+        "Source":"PasReport from LatestTP in Products.json",
+        "Methodology": "Using the LatestTP value from Products.json, access the corresponding PasReport to filter and extract detailed information for tests with InstanceNames containing 'ATSPEED' within the Scrum:SCN, ModuleName:CORE and SubFlow:PREHVQK. Compile the relevant columns such as STATUS, Bypass, Bins, Counters, LEVEL, TIMING, PLIST, MonitorPatCount, KILLPatCount, SkippedPatCount, Content Directory, PatternVREV, TestType, TpOptions, Scrum, ModuleName, ModuleUser, TestCategory, Partition, TestType.1, TestTypeFlag, SubFlow, PatternRatio, VoltageDomain, Corner, Frequency, and InstanceUser. Present this detailed information to the user to provide a comprehensive understanding of the ATSPEED tests conducted in this module and flow."
+
+    },
+    "5":{
+        "Q5":"Does PTUSDJXA1H21G402546 have VCC continuity in the flow and where",
+        "Answer":"""Yes, the test program PTUSDJXA1H21G402546 includes VCC continuity tests in the following locations:
+            | InstanceName | SubFlow |
+            | --- | --- |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_X_POWERDOWN_600MV | START |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_POWERDOWN | START |
+            | TPI_VCC::CONT_ALL_DC_E_SDTSTART_X_X_X_X_POSTSURGE_POWERDOWN | SDTSTART |
+            | TPI_VCC::CONT_ALL_DC_E_SDTSTART_X_X_X_X_POWERDOWN | SDTSTART |
+            | TPI_VCC::CONT_ALL_DC_E_SDTFINAL_X_X_X_X_PREVCC_POWERDOWN | SDTFINAL |
+            | TPI_VCC::CONT_ALL_DC_E_SDTFINAL_X_X_X_X_POWERDOWN | SDTFINAL |
+            | TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POSTSURGE_POWERDOWN | FINAL |
+            | TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POWERUP | FINAL |
+            | TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POSTSURGE_POWERDOWN_COLD | FINAL |
+            | TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POWERUP_COLD | FINAL |
+            | TPI_VCC::CONT_X_X_K_START_X_X_X_X_MIMINIT | START |
+            | TPI_VCC::CONT_VLC01_DC_E_START_X_X_X_X_CHAR_ALL_ISVM | START |
+            | TPI_VCC::CONT_VLC01_DC_E_START_X_X_X_X_CHAR_ALL_VSIM | START |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_POSTPOWERDOWN | START |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_POSTCHAR_PWRDN | START |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_POSTSURGE_POWERDOWN_NOM | START |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_PREPOWERDOWN | START |
+            | TPI_VCC::CONT_X_X_K_FINAL_X_X_X_X_VCCSHIFT | FINAL |""",
+        "Source":"PasReport from LatestTP in Products.json",
+        "Methodology": "Using the LatestTP value from Products.json, access the corresponding PasReport to filter and extract tests specifically for the Scrum:TPI, ModuleName:VCC that are related to VCC continuity. Look for InstanceNames that contain keywords such as 'CONT'. Compile the lists of unique tests (The InstanceName column in the pas report) along with their associated SubFlow and return this information to the user so that they can understand where VCC continuity tests are conducted in the test program."
+    },
+    "6":{
+        "Q6":"What does it look like",
+        "Answer":"""The test program PTUSDJXA1H21G402546 for PantherLake CPU-U is structured to include various flows and modules that cover a comprehensive range of tests. It includes initialization, stress testing, functional tests, and final assessments. The program is designed to ensure the CPU meets performance, reliability, and quality standards through a series of well-defined test sequences:
+            | InstanceName | STATUS | Bypass | Bins | Counters | LEVEL | TIMING | PLIST | MonitorPatCount | KILLPatCount | SkippedPatCount | Content Directory | PatternVREV | TestType | TpOptions | Scrum | ModuleName | ModuleUser | TestCategory | Partition | TestType.1 | TestTypeFlag | SubFlow | PatternRatio | VoltageDomain | Corner | Frequency | InstanceUser |
+            | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_X_POWERDOWN_600MV | EDC |  | | | 90080016|90080022 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | START | X | X | X | X | X_POWERDOWN_600MV |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_POWERDOWN | EDC |  | | | 90080020|90080021 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | START | X | X | X | X | POWERDOWN |
+            | TPI_VCC::CONT_ALL_DC_E_SDTSTART_X_X_X_X_POSTSURGE_POWERDOWN | EDC |  | | | 90080012|90080013 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | SDTSTART | X | X | X | X | POSTSURGE_POWERDOWN |
+            | TPI_VCC::CONT_ALL_DC_E_SDTSTART_X_X_X_X_POWERDOWN | EDC |  | | | 90080014|90080015 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | SDTSTART | X | X | X | X | POWERDOWN |
+            | TPI_VCC::CONT_ALL_DC_E_SDTFINAL_X_X_X_X_PREVCC_POWERDOWN | EDC |  | | | 90080000|90080001 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | SDTFINAL | X | X | X | X | PREVCC_POWERDOWN |
+            | TPI_VCC::CONT_ALL_DC_E_SDTFINAL_X_X_X_X_POWERDOWN | EDC |  | | | 90080002|90080003 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | SDTFINAL | X | X | X | X | POWERDOWN |
+            | TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POSTSURGE_POWERDOWN | EDC |  | | | 90080004|90080005 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | FINAL | X | X | X | X | POSTSURGE_POWERDOWN |
+            | TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POWERUP | EDC |  | | | 90080006|90080007 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | FINAL | X | X | X | X | POWERUP |
+            | TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POSTSURGE_POWERDOWN_COLD | EDC |  | | | 90080040|90080041 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | FINAL | X | X | X | X | POSTSURGE_POWERDOWN_COLD |
+            | TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POWERUP_COLD | EDC |  | | | 90080042|90080043 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | FINAL | X | X | X | X | POWERUP_COLD |
+            | TPI_VCC::CONT_X_X_K_START_X_X_X_X_MIMINIT | Kill |  | 08900029|08900030 | 08900029|08900030 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | ScreenTC |  | TPI | VCC |  | CONT | X | X | K | START | X | X | X | X | MIMINIT |
+            | TPI_VCC::CTRL_X_X_K_START_X_X_X_X_CHARACTERIZE_FORK | Kill |  | 08900039 | 08900039 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | AuxiliaryTC |  | TPI | VCC |  | CTRL | X | X | K | START | X | X | X | X | CHARACTERIZE_FORK |
+            | TPI_VCC::CONT_VLC01_DC_E_START_X_X_X_X_CHAR_ALL_ISVM | Bypassed | BypassedOnlyTPL | ||||||||||||||||||||||||||||||| | 08150232|08990048|08990049|08990050|08990051|08990052|08990053|08990054|08990055|08990056|08990057|08990086|08990087|08990160|08990161|08990162|08990163|08990164|08990165|08990046|08990047|08990099|08990100|08990170|08990171|08990172|08990173|08990194|08990327|08990400|08990401|08990402 | BASE::dc_ISVM_lvl | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | SPEXVccContinuity |  | TPI | VCC |  | CONT | VLC01 | DC | E | START | X | X | X | X | CHAR_ALL_ISVM |
+            | TPI_VCC::CONT_VLC01_DC_E_START_X_X_X_X_CHAR_ALL_VSIM | Bypassed | BypassedOnlyTPL | ||||||||||||||||||||||||||||||| | 08150013|08990027|08990028|08990029|08990042|08990038|08990039|08990040|08990041|08990071|08990072|08990073|08990074|08990075|08990076|08990077|08990078|08990079|08990080|08990081|08990082|08990083|08990084|08990085|08991089|08991090|08991091|08991092|08991093|08991094|08991095|08991096 | BASE::dc_lvl | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | SPEXVccContinuity |  | TPI | VCC |  | CONT | VLC01 | DC | E | START | X | X | X | X | CHAR_ALL_VSIM |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_POSTPOWERDOWN | EDC |  | | | 90080010|90080011 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | START | X | X | X | X | ISVM_POSTPOWERDOWN |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_POSTCHAR_PWRDN | Bypassed | BypassedOnlyTPL | | | 90080026|90080027 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | START | X | X | X | X | ISVM_POSTCHAR_PWRDN |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_POSTSURGE_POWERDOWN_NOM | EDC |  | | | 90080030|90080031 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | START | X | X | X | X | POSTSURGE_POWERDOWN_NOM |
+            | TPI_VCC::SURGE_ALL_DC_E_START_X_X_X_X_POSTSURGE_PARALLEL_NOM | EDC |  | | | 90080032|90080033 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | SURGE | ALL | DC | E | START | X | X | X | X | POSTSURGE_PARALLEL_NOM |
+            | TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_PREPOWERDOWN | EDC |  | | | 90080008|90080009 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | PrimeApplyTestConditionTestMethod |  | TPI | VCC |  | CONT | ALL | DC | E | START | X | X | X | X | ISVM_PREPOWERDOWN |
+            | TPI_VCC::CONT_X_X_K_FINAL_X_X_X_X_VCCSHIFT | Kill |  | 08900025|89900006|89010022|89020022|89030022|89040022|89050022|89060022|89070022|89080022|89090022|89100022|89110022|89120022|89130022|89140022|89150022|89160022|89170022|89180022|89190022|89200022|89210022|89220022|89230022|89240022|89250022|89360022|89270022|89280022|89290022|89300022 | 08900025|89900006|89010022|89020022|89030022|89040022|89050022|89060022|89070022|89080022|89090022|89100022|89110022|89120022|89130022|89140022|89150022|89160022|89170022|89180022|89190022|89200022|89210022|89220022|89230022|89240022|89250022|89360022|89270022|89280022|89290022|89300022 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | ScreenTC |  | TPI | VCC |  | CONT | X | X | K | FINAL | X | X | X | X | VCCSHIFT |
+            | TPI_VCC::CTRL_X_X_K_FINAL_X_X_X_X_X_CALCSHIFT | Monitor |  |  | 89900000 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | RunCallback |  | TPI | VCC |  | CTRL | X | X | K | FINAL | X | X | X | X | X_CALCSHIFT |
+            | TPI_VCC::CTRL_X_X_K_FINAL_X_X_X_X_X_VCCADTL | Monitor |  | |||| | 87900000|87070000|87070001|87070002|87070003 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | SPEXADTL |  | TPI | VCC |  | CTRL | X | X | K | FINAL | X | X | X | X | X_VCCADTL |
+            | TPI_VCC::CTRL_X_X_K_FINAL_X_X_X_X_X_PROCESSADTLTOKEN | Bypassed | BypassedOnlyTPL |  | 89900002 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | RunCallback |  | TPI | VCC |  | CTRL | X | X | K | FINAL | X | X | X | X | X_PROCESSADTLTOKEN |
+            | TPI_VCC::CTRL_X_X_K_SDTSTART_X_X_X_X_X_VCCADTL | Monitor |  | |||| | 87900002|87070008|87070009|87070010|87070011 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | SPEXADTL |  | TPI | VCC |  | CTRL | X | X | K | SDTSTART | X | X | X | X | X_VCCADTL |
+            | TPI_VCC::CTRL_X_X_K_SDTSTART_X_X_X_X_X_PROCESSADTLTOKEN | Monitor |  |  | 89900004 | NoLevels | NoTimings | NOPLIST | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | RunCallback |  | TPI | VCC |  | CTRL | X | X | K | SDTSTART | X | X | X | X | X_PROCESSADTLTOKEN |""",
+        "Source":"PasReport from LatestTP in Products.json",
+        "Methodology": "Using the LatestTP value from Products.json, access the corresponding PasReport to extract a representative sample of tests across different flows and modules. Compile key columns such as InstanceName, STATUS, Bypass, Bins, Counters, LEVEL, TIMING, PLIST, MonitorPatCount, KILLPatCount, SkippedPatCount, Content Directory, PatternVREV, TestType, TpOptions, Scrum, ModuleName, ModuleUser, TestCategory, Partition, TestType.1, TestTypeFlag, SubFlow, PatternRatio, VoltageDomain, Corner, Frequency, and InstanceUser. Present this structured data to illustrate the overall structure and content of the test program for PantherLake CPU-U."
+    },
+    "7":{
+        "Q7":"Does PTUSDJXA1H21G402546 have a HVQK water fall flow",
+        "Answer":"""Yes, the test program PTUSDJXA1H21G402546 includes a HVQK waterfall flow. The HVQK waterfall flow is designed to test the device under high voltage and quality conditions, ensuring that it meets the required performance and reliability standards. This flow typically involves a series of tests that progressively increase in stress levels to evaluate the device's robustness and functionality under extreme conditions. The presence of this flow in the test program indicates a comprehensive approach to quality assurance for the PantherLake CPU-U. It is present in the following modules:
+            ARR_ATOM HVQK waterfall files:
+            atom_hp_cache_all_stress.hvqk.config.json
+            atom_lp_cache_all_ifrstress.hvqk.config.json
+            atom_lp_cache_all_stress.hvqk.config.json
+            atom_lp_cache_all_stress_red.hvqk.config.json
+
+            ARR_CCF HVQK waterfall files:
+            ccf_cache_cbo_red_stress.hvqk.config.json
+            ccf_cache_cbo_ssa_stress.hvqk.config.json
+            ccf_cache_pma_stress.hvqk.config.json
+            ccf_cache_sbo_stress.hvqk.config.json
+
+            ARR_CORE HVQK waterfall files:
+            core_cache_all_stress.hvqk.config.json
+            core_cache_pmucs_stress.hvqk.config.json
+            core_cache_red_stress.hvqk.config.json
+
+            ARR_DIM HVQK waterfall files:
+            dim_cache_de_stress.hvqk.config.json
+            dim_cache_ipu_stress.hvqk.config.json
+            dim_cache_media_stress.hvqk.config.json
+
+            ARR_NPU HVQK waterfall files:
+            npu_cache_all_stress.hvqk.config.json
+            npu_cache_all_stress_npu_mask.hvqk.config.json
+            npu_cache_all_stress_npu_xsa_nonrec.hvqk.config.json
+
+            ARR_SOC HVQK waterfall files:
+            soc_cache_all_stress.hvqk.config.json
+            soc_cache_fuse_stress.hvqk.config.json
+            soc_cache_ondd_stress.hvqk.config.json
+            soc_cache_san_stress.hvqk.config.json
+            soc_cache_saq_stress.hvqk.config.json
+
+            MIO_DDR_AC HVQK waterfall files:
+            ddr_dqmm_io_stress.hvqk.config.json
+
+            SCN_ATOM HVQK waterfall files:
+            scn_atom_lp_logic_stress.hvqk.config.json
+
+            SCN_CCF HVQK waterfall files:
+            input1.hvqk.config.json
+            scn_ccf_logic_stress.hvqk.config.json
+            scn_ccfxtal_logic_stress.hvqk.config.json
+
+            SCN_CORE HVQK waterfall files:
+            input1.hvqk.config.json
+            scn_core_core0_logic_stress.hvqk.config.json
+            scn_core_core1_logic_stress.hvqk.config.json
+            scn_core_core2_logic_stress.hvqk.config.json
+            scn_core_core3_logic_stress.hvqk.config.json
+
+            SCN_DIM HVQK waterfall files:
+            input1.hvqk.config.json
+            scn_dim_cdclk_logic_stress.hvqk.config.json
+            scn_dim_cdclkxtal_logic_stress.hvqk.config.json
+            scn_dim_ipuclk_logic_stress.hvqk.config.json
+            scn_dim_meclk_logic_stress.hvqk.config.json
+            scn_dim_meclkxtal_logic_stress.hvqk.config.json
+
+            SCN_NPU HVQK waterfall files:
+            input1.hvqk.config.json
+            scn_vpu_common_logic_stress.hvqk.config.json
+            scn_vpu_tile0_logic_stress.hvqk.config.json
+            scn_vpu_tile1_logic_stress.hvqk.config.json
+            scn_vpu_tile2_logic_stress.hvqk.config.json
+
+            SCN_UNCORE HVQK waterfall files:
+            input1.hvqk.config.json
+            scn_uncore_ddrphy_logic_stress.hvqk.config.json
+            scn_uncore_nclk_logic_stress.hvqk.config.json
+            scn_uncore_nonclk_logic_stress.hvqk.config.json
+            scn_uncore_qclk_logic_stress.hvqk.config.json
+            scn_uncore_uncore_logic_stress.hvqk.config.json
+            scn_uncore_uncorextal_logic_stress.hvqk.config.json
+            """,
+        "Source":"Walking the Modules folder in the Test Program (PTUSDJXA1H21G402546) to find HVQK waterfall files",
+        "Methodology": "Walking through the each Module in the Modules folder for a test program, lookinf for a folder named InputFiles, searching for any/all files that end with .hvqk.config.json. If any are found, listing them along with their respective module names to confirm the presence of a HVQK waterfall flow in the test program."
+    },
+    "8":{
+        "Q8":"What does the ARR_ATOM HVQK waterfall look like?",
+        "Answer":"""The ARR_ATOM HVQK waterfall flow in the test program PTUSDJXA1H21G402546 is structured to include several specific test configurations designed to stress the ATOM module under high voltage and quality conditions. The flow consists of the following HVQK configuration files:
+            ARR_ATOM HVQK waterfall config:
+                atom_hp_cache_all_stress.hvqk.config.json
+                | Key | Value |
+                | --- | --- |
+                | DomainName | ATOMHP |
+                | InstanceName | CACHE_ATOM_HP |
+                | VoltageStart | HVQKVars.STRESS_HIGHV |
+                | VoltageStop | HVQKVars.STRESS_LOWV |
+                | Pin | ["VCCIA_HC"] |
+                | VoltageSteps | [{"Name": "1.5", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.5}}, {"Name": "1.4", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.4}}, {"Name": "1.3", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.3}}, {"Name": "1.2", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.2}}, {"Name": "1.1", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.1}}, {"Name": "1", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.0}}] |   
+
+                atom_lp_cache_all_ifrstress.hvqk.config.json
+                | Key | Value |
+                | --- | --- |
+                | DomainName | ATOMLP |
+                | InstanceName | CACHE_ATOM_LP_IFR |
+                | VoltageStart | HVQKVars.STRESS_HIGHV |
+                | VoltageStop | HVQKVars.STRESS_LOWV |
+                | Pin | ["VCCATOM0_HC"] |
+                | VoltageSteps | [{"Name": "1.5", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.5}}, {"Name": "1.4", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.4}}, {"Name": "1.3", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.3}}, {"Name": "1.2", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.2}}, {"Name": "1.1", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.1}}, {"Name": "1", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.0}}] |   
+
+                atom_lp_cache_all_stress.hvqk.config.json
+                | Key | Value |
+                | --- | --- |
+                | DomainName | ATOMLP |
+                | InstanceName | CACHE_ATOM_LP |
+                | VoltageStart | HVQKVars.STRESS_HIGHV |
+                | VoltageStop | HVQKVars.STRESS_LOWV |
+                | Pin | ["VCCATOM0_HC"] |
+                | VoltageSteps | [{"Name": "1.5", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.5}}, {"Name": "1.4", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.4}}, {"Name": "1.3", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.3}}, {"Name": "1.2", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.2}, "SharedStorage": {"TokenName": "ATOMLPC_LSA_B17", "TokenValue": "1", "Condition": "ALWAYS"}}, {"Name": "1.1", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.1}}, {"Name": "1", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.0}}] |
+
+                atom_lp_cache_all_stress_red.hvqk.config.json
+                | Key | Value |
+                | --- | --- |
+                | DomainName | ATOMLP |
+                | InstanceName | CACHE_ATOM_LP_RED |
+                | VoltageStart | HVQKVars.STRESS_HIGHV |
+                | VoltageStop | HVQKVars.STRESS_LOWV |
+                | Pin | ["VCCATOM0_HC"] |
+                | VoltageSteps | [{"Name": "1.5", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.5}}, {"Name": "1.4", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.4}}, {"Name": "1.3", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.3}}, {"Name": "1.2", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.2}}, {"Name": "1.1", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.1}}, {"Name": "1", "AlarmAction": "EXIT", "PlistExecFailAction": "CONTINUE", "Vforce": {"ForceValue": 1.0}}] |   
+        """,
+        "Source":"Walking the Modules/ARR_ATOM/InputFiles folder in the Test Program (PTUSDJXA1H21G402546) to find HVQK waterfall files and extracting their contents",
+        "Methodology": "Walking through the ARR_ATOM Module in the Modules folder for a test program, looking into the InputFiles folder to find files that end with .hvqk.config.json. Extracting the key configuration details from each of these files to provide a comprehensive overview of the ARR_ATOM HVQK waterfall flow in the test program."
+    }
+}
