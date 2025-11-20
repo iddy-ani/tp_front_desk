@@ -10,29 +10,29 @@
     },
     {
         "ProductCode":"8PH7",
-        "ProductName":"WildcatLake CPU",
+        "ProductName":"WildcatLake CPU 204",
         "NetworkPath":"\\\\s46file1.cd.intel.com\\sdx\\program\\1278\\prod\\hdmtprogs\\wcl_wcl_sds",
         "LatestTP":null,
         "NumberOfReleases":null,
-        "ListOfReleases":[""],
+        "ListOfReleases":[],
         "LastRunDate":null
     },
     {
         "ProductCode":"8PON",
-        "ProductName":"PantherLake CPU 8PON",
+        "ProductName":"PantherLake CPU 484",
         "NetworkPath":"\\\\alpfile3.al.intel.com\\sdx_ods\\program\\1278\\prod\\hdmtprogs\\ptl_ptl_sds",
         "LatestTP":null,
         "NumberOfReleases":null,
-        "ListOfReleases":[""],
+        "ListOfReleases":[],
         "LastRunDate":null
     },
     {
         "ProductCode":"8PXN",
-        "ProductName":"Pantherlake GCD 64EU 8PXN",
+        "ProductName":"Pantherlake GCD 64EU",
         "NetworkPath":"\\\\alpfile3.al.intel.com\\sdx_ods\\program\\1276\\prod\\hdmtprogs\\ptl_ptg_sds",
         "LatestTP":null,
         "NumberOfReleases":null,
-        "ListOfReleases":[""],
+        "ListOfReleases":[],
         "LastRunDate":null
     },
     {
@@ -41,7 +41,16 @@
         "NetworkPath":"\\\\al4file1.ra.intel.com\\sdx\\program\\1278\\prod\\hdmtprogs\\nvl_ngp_sds",
         "LatestTP":null,
         "NumberOfReleases":null,
-        "ListOfReleases":[""],
+        "ListOfReleases":[],
+        "LastRunDate":null
+    },
+    {
+        "ProductCode":"8PF7",
+        "ProductName":"Nova Lake CPU 816",
+        "NetworkPath":"\\\\al4file1.ra.intel.com\\sdx\\program\\1278\\prod\\hdmtprogs\\nvl_ncx_sds",
+        "LatestTP":null,
+        "NumberOfReleases":null,
+        "ListOfReleases":[],
         "LastRunDate":null
     }
 ]

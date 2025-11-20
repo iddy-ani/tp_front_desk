@@ -15,12 +15,37 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TYPE_CHECKING
 
 from pymongo import MongoClient
-from pymongo.collection import Collection
+
+if TYPE_CHECKING:
+    from pymongo.collection import Collection as MongoCollection
+    MongoClientType = MongoClient
+else:  # pragma: no cover - runtime alias to avoid Pydantic schema generation on PyMongo types
+    MongoCollection = Any
+    MongoClientType = Any
 from pymongo.errors import PyMongoError
 from pydantic import BaseModel, Field
+
+MONGO_URI = (
+    "mongodb://iq6cdegc265ebn7uiiem_admin:"
+    "Yv0BqT17bakhZ9M%2CrL%3DbTPD0fqbVo%2Ch4@"
+    "10-108-27-21.dbaas.intel.com:27017,"
+    "10-108-27-23.dbaas.intel.com:27017,"
+    "10-109-224-18.dbaas.intel.com:27017/"
+    "tpfrontdesk?authSource=admin&tls=true"
+)
+
+MONGO_DATABASE = "tpfrontdesk"
+INGEST_COLLECTION = "ingest_artifacts"
+MODULE_SUMMARY_COLLECTION = "module_summary"
+TEST_INSTANCES_COLLECTION = "test_instances"
+PORT_RESULTS_COLLECTION = "port_results"
+FLOW_MAP_COLLECTION = "flow_map"
+SETPOINTS_COLLECTION = "setpoints"
+ARTIFACTS_COLLECTION = "artifacts"
+PRODUCT_COLLECTION = "product_configs"
 
 
 # Reusable status emitter so Open WebUI can stream progress updates
@@ -91,46 +116,6 @@ class QuestionClassifier:
 
 class Tools:
     class Valves(BaseModel):
-        mongo_uri: str = Field(
-            default_factory=lambda: _safe_getenv("TPFD_MONGO_URI"),
-            description="Primary Mongo connection string",
-        )
-        mongo_database: str = Field(
-            default=_safe_getenv("TPFD_MONGO_DB", "tpfrontdesk"),
-            description="Mongo database name",
-        )
-        ingest_collection: str = Field(
-            default=_safe_getenv("TPFD_MONGO_COLLECTION", "ingest_artifacts"),
-            description="Collection containing ingest artifacts",
-        )
-        module_summary_collection: str = Field(
-            default=_safe_getenv("TPFD_MONGO_MODULE_SUMMARY_COLLECTION", "module_summary"),
-            description="Collection containing per-module PAS summaries",
-        )
-        test_instances_collection: str = Field(
-            default=_safe_getenv("TPFD_MONGO_TEST_INSTANCES_COLLECTION", "test_instances"),
-            description="Collection storing PAS instances",
-        )
-        port_results_collection: str = Field(
-            default=_safe_getenv("TPFD_MONGO_PORT_RESULTS_COLLECTION", "port_results"),
-            description="Collection storing PAS port data",
-        )
-        flow_map_collection: str = Field(
-            default=_safe_getenv("TPFD_MONGO_FLOW_MAP_COLLECTION", "flow_map"),
-            description="Collection storing StartItemList entries",
-        )
-        setpoints_collection: str = Field(
-            default=_safe_getenv("TPFD_MONGO_SETPOINT_COLLECTION", "setpoints"),
-            description="Collection storing setpoint metadata",
-        )
-        artifacts_collection: str = Field(
-            default=_safe_getenv("TPFD_MONGO_ARTIFACTS_COLLECTION", "artifacts"),
-            description="Collection storing artifact references",
-        )
-        product_collection: str = Field(
-            default=_safe_getenv("TPFD_MONGO_PRODUCT_COLLECTION", "product_configs"),
-            description="Collection storing product state",
-        )
         max_test_instance_rows: int = Field(
             default=250,
             ge=25,
@@ -153,7 +138,6 @@ class Tools:
         )
 
     class UserValves(BaseModel):
-        mongo_uri: str = Field(default="", description="Override Mongo connection URI")
         mongo_database: str = Field(default="", description="Override database name")
         product_code: str = Field(
             default="", description="Preferred product code if not provided in the prompt"
@@ -162,37 +146,46 @@ class Tools:
 
     def __init__(self):
         self.valves = self.Valves()
-        self._mongo_client: Optional[MongoClient] = None
+        self._mongo_client: Optional[MongoClientType] = None
 
     # Connection helpers -----------------------------------------------------------------
-    def _get_mongo_client(self, user_valves: Optional[UserValves] = None) -> Optional[MongoClient]:
-        uri = (user_valves.mongo_uri if user_valves and user_valves.mongo_uri else self.valves.mongo_uri).strip()
-        if not uri:
-            return None
+    def _get_mongo_client(self, user_valves: Optional["Tools.UserValves"] = None) -> Optional[MongoClientType]:
+        uri = MONGO_URI
         if self._mongo_client is None:
             self._mongo_client = MongoClient(uri)
         return self._mongo_client
 
-    def _get_collection(self, client: MongoClient, name: str) -> Collection:
-        return client[self.valves.mongo_database][name]
+    def _get_collection(self, client: MongoClientType, name: str) -> MongoCollection:
+        return client[MONGO_DATABASE][name]
 
     # Context resolution ------------------------------------------------------------------
     def _resolve_context(
         self,
-        ingest_collection: Collection,
+        ingest_collection: MongoCollection,
         product_code: Optional[str],
         tp_name: Optional[str],
     ) -> TPContext:
-        filters: Dict[str, Any] = {}
+        conditions: List[Dict[str, Any]] = []
         if tp_name:
-            filters["tp_name"] = tp_name.strip()
+            conditions.append({"tp_name": tp_name.strip()})
         if product_code:
-            filters["product.product_code"] = product_code.strip()
-        cursor = ingest_collection.find(filters).sort("ingested_at", -1)
-        doc = cursor.next() if cursor else None
-        if doc is None:
+            product_code = product_code.strip()
+            conditions.append(
+                {
+                    "$or": [
+                        {"product.product_code": product_code},
+                        {"metadata.product_code": product_code},
+                    ]
+                }
+            )
+        query: Dict[str, Any] = {"$and": conditions} if conditions else {}
+        cursor = ingest_collection.find(query).sort("ingested_at", -1)
+        try:
+            doc = cursor.next()
+        except StopIteration:
             raise ValueError(
-                "Unable to locate an ingest record. Provide a valid product code or TP name that has been ingested."
+                "Unable to locate an ingest record matching TP "
+                f"{tp_name or 'any'} and product {product_code or 'any'}."
             )
         metadata = doc.get("metadata", {}) or {}
         product_blob = doc.get("product", {}) or {}
@@ -207,19 +200,19 @@ class Tools:
         )
 
     # Query helpers ----------------------------------------------------------------------
-    def _fetch_product_state(self, product_collection: Collection, product_code: Optional[str]) -> Optional[dict]:
+    def _fetch_product_state(self, product_collection: MongoCollection, product_code: Optional[str]) -> Optional[dict]:
         if not product_code:
             return None
         return product_collection.find_one({"product_code": product_code})
 
-    def _sample_test_instances(self, test_collection: Collection, ctx: TPContext) -> List[dict]:
+    def _sample_test_instances(self, test_collection: MongoCollection, ctx: TPContext) -> List[dict]:
         cursor = (
             test_collection.find({"tp_document_id": ctx.tp_document_id}, {"module_name": 1, "instance_name": 1, "status": 1})
             .limit(self.valves.max_test_instance_rows)
         )
         return list(cursor)
 
-    def _sample_flow_rows(self, flow_collection: Collection, ctx: TPContext, keyword: Optional[str] = None) -> List[dict]:
+    def _sample_flow_rows(self, flow_collection: MongoCollection, ctx: TPContext, keyword: Optional[str] = None) -> List[dict]:
         filters: Dict[str, Any] = {"tp_document_id": ctx.tp_document_id}
         if keyword:
             filters["$or"] = [
@@ -232,12 +225,12 @@ class Tools:
             .limit(self.valves.max_flow_rows)
         )
 
-    def _fetch_module_summary(self, module_collection: Collection, ctx: TPContext) -> List[dict]:
+    def _fetch_module_summary(self, module_collection: MongoCollection, ctx: TPContext) -> List[dict]:
         return list(
             module_collection.find({"tp_document_id": ctx.tp_document_id}, {"module_name": 1, "total_tests": 1, "total_kill": 1, "percent_kill": 1})
         )
 
-    def _fetch_setpoints(self, setpoints_collection: Collection, ctx: TPContext, keyword: str) -> List[dict]:
+    def _fetch_setpoints(self, setpoints_collection: MongoCollection, ctx: TPContext, keyword: str) -> List[dict]:
         regex = {"$regex": keyword, "$options": "i"}
         filters = {
             "tp_document_id": ctx.tp_document_id,
@@ -251,7 +244,7 @@ class Tools:
             setpoints_collection.find(filters, {"module": 1, "test_instance": 1, "method": 1, "values": 1}).limit(50)
         )
 
-    def _fetch_artifact_summary(self, artifacts_collection: Collection, ctx: TPContext) -> Dict[str, int]:
+    def _fetch_artifact_summary(self, artifacts_collection: MongoCollection, ctx: TPContext) -> Dict[str, int]:
         pipeline = [
             {"$match": {"tp_document_id": ctx.tp_document_id}},
             {"$group": {"_id": "$category", "count": {"$sum": 1}}},
@@ -370,13 +363,13 @@ class Tools:
         user_valves = self.UserValves()
         client = self._get_mongo_client(user_valves)
         if client is None:
-            await emitter.error("Mongo connection unavailable. Update the mongo_uri valve or set TPFD_MONGO_URI.")
+            await emitter.error("Mongo connection unavailable. Hardcoded URI returned no client.")
             return "Mongo connection is not configured."
 
         product_code = product_code or user_valves.product_code or self.valves.default_product_code
         tp_name = tp_name or user_valves.tp_name or self.valves.default_tp_name
 
-        ingest_collection = self._get_collection(client, self.valves.ingest_collection)
+        ingest_collection = self._get_collection(client, INGEST_COLLECTION)
         classification = QuestionClassifier.classify(question)
 
         try:
@@ -387,13 +380,13 @@ class Tools:
 
         await emitter.progress(f"Resolved context: {ctx.tp_name} ({ctx.product_code or 'unknown product'})")
 
-        module_collection = self._get_collection(client, self.valves.module_summary_collection)
-        test_collection = self._get_collection(client, self.valves.test_instances_collection)
-        flow_collection = self._get_collection(client, self.valves.flow_map_collection)
-        port_collection = self._get_collection(client, self.valves.port_results_collection)
-        setpoints_collection = self._get_collection(client, self.valves.setpoints_collection)
-        artifacts_collection = self._get_collection(client, self.valves.artifacts_collection)
-        product_collection = self._get_collection(client, self.valves.product_collection)
+        module_collection = self._get_collection(client, MODULE_SUMMARY_COLLECTION)
+        test_collection = self._get_collection(client, TEST_INSTANCES_COLLECTION)
+        flow_collection = self._get_collection(client, FLOW_MAP_COLLECTION)
+        port_collection = self._get_collection(client, PORT_RESULTS_COLLECTION)
+        setpoints_collection = self._get_collection(client, SETPOINTS_COLLECTION)
+        artifacts_collection = self._get_collection(client, ARTIFACTS_COLLECTION)
+        product_collection = self._get_collection(client, PRODUCT_COLLECTION)
 
         answer_lines: List[str] = []
 

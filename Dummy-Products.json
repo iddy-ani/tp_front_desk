@@ -1,6 +1,6 @@
 {
     "ProductCode":"8PXMCV", // The product code
-    "ProductName":"PantherLake CPU-U", // The product name
+    "ProductName":"PantherLake CPU-U 404", // The product name
     "NetworkPath":"\\alpfile3.al.intel.com\sdx_ods\program\1278\prod\hdmtprogs\ptl_ptu_sds", // The network path where the product files are stored
     "LatestTP":"PTUSDJXA1H21G402546", // The latest test program that was parsed and stored to the database
     "NumberOfReleases":20, // The number of previous releases in the database
