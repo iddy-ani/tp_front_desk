@@ -97,6 +97,7 @@ class QuestionClassifier:
         ("current_tp", ("current test program", "latest tp", "current tp")),
         ("list_tests", ("what tests", "list of tests", "tests does it have")),
         ("hvqk_flow", ("hvqk", "water fall", "waterfall")),
+        ("atspeed_detail", ("atspeed",)),
         ("tp_snapshot", ("what does it look like", "overview", "snapshot")),
         ("vcc_continuity", ("vcc continuity", "continuity")),
         ("setpoints", ("vMintc", "settings", "test class")),
@@ -448,7 +449,7 @@ class Tools:
     def _format_flow_answer(self, ctx: TPContext, flows: List[dict], keyword: str, description: str) -> str:
         if not flows:
             return f"No {description} references matched '{keyword}'."
-        lines = [f"🔍 {description.title()} hits for '{keyword}' ({len(flows)} results)"]
+        lines = [f"🔍 {description} hits for '{keyword}' ({len(flows)} results)"]
         for row in flows[:8]:
             lines.append(
                 f"- Module {row.get('module')} | Flow {row.get('dutflow')} | Instance {row.get('instance')} (index {row.get('sequence_index')})"
@@ -616,19 +617,24 @@ class Tools:
 
             elif classification == "vcc_continuity":
                 flows = self._sample_flow_rows(flow_collection, ctx, keyword="vcc")
-                tests = self._sample_test_instances(test_collection, ctx)
-                matches = [
-                    row
-                    for row in tests
-                    if "vcc" in (row.get("instance_name") or "").lower()
-                    and "cont" in (row.get("instance_name") or "").lower()
-                ]
+                continuity_rows = self._fetch_test_rows(
+                    test_collection,
+                    ctx,
+                    extra_filters={
+                        "scrum": "TPI",
+                        "module_name": {"$regex": "VCC", "$options": "i"},
+                        "instance_name": {"$regex": "CONT", "$options": "i"},
+                    },
+                    limit=min(100, self.valves.max_test_instance_rows),
+                )
                 lines = [self._format_flow_answer(ctx, flows, "VCC", "VCC continuity flows")]
-                if matches:
-                    lines.append(
-                        "PAS instances: "
-                        + ", ".join(f"{row.get('module_name')}::{row.get('instance_name')}" for row in matches[:6])
+                lines.append(
+                    self._format_detailed_tests(
+                        continuity_rows,
+                        title="TPI_VCC continuity instances",
+                        limit=min(100, self.valves.max_test_instance_rows),
                     )
+                )
                 answer_lines.extend(lines)
 
             elif classification == "setpoints":
