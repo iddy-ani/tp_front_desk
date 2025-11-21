@@ -145,6 +145,11 @@ class Tools:
         )
         tp_name: str = Field(default="", description="Preferred TP name if not provided")
 
+    class ContextResolutionError(Exception):
+        def __init__(self, message: str, suggestions: Optional[List[str]] = None):
+            super().__init__(message)
+            self.suggestions = suggestions or []
+
     def __init__(self):
         self.valves = self.Valves()
         self._mongo_client: Optional[MongoClientType] = None
@@ -154,6 +159,17 @@ class Tools:
     def _normalize_token(value: str) -> str:
         return re.sub(r"[^A-Z0-9]", "", (value or "").upper())
 
+    @staticmethod
+    def _tokenize(value: str) -> List[str]:
+        return [token for token in re.split(r"[^A-Z0-9]+", (value or "").upper()) if token]
+
+    @staticmethod
+    def _looks_like_product_code(value: str) -> bool:
+        if not value:
+            return False
+        stripped = value.strip().upper()
+        return bool(re.fullmatch(r"[0-9A-Z]{3,}", stripped))
+
     def _match_catalog_token(self, question: str, catalog: Iterable[str]) -> Optional[str]:
         normalized_question = self._normalize_token(question)
         for entry in catalog:
@@ -161,6 +177,56 @@ class Tools:
             if token and token in normalized_question:
                 return entry
         return None
+
+    def _infer_product_from_question(
+        self,
+        product_collection: MongoCollection,
+        question: str,
+    ) -> Optional[dict]:
+        if not question.strip():
+            return None
+        normalized = question.lower()
+        candidates: List[Tuple[int, dict]] = []
+        for row in product_collection.find({}, {"product_code": 1, "product_name": 1}):
+            name = (row.get("product_name") or "").strip()
+            if not name:
+                continue
+            if name.lower() in normalized:
+                return row
+            name_tokens = set(self._tokenize(name))
+            question_tokens = set(self._tokenize(question))
+            if not name_tokens or not question_tokens:
+                continue
+            overlap = len(name_tokens & question_tokens)
+            if overlap:
+                candidates.append((overlap, row))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda item: item[0], reverse=True)
+        top_score = candidates[0][0]
+        best = [row for score, row in candidates if score == top_score]
+        return best[0] if len(best) == 1 else None
+
+    def _candidate_product_suggestions(
+        self,
+        product_collection: MongoCollection,
+        text: str,
+        limit: int = 6,
+    ) -> List[str]:
+        suggestions: List[Tuple[int, str]] = []
+        tokens = set(self._tokenize(text))
+        for row in product_collection.find({}, {"product_code": 1, "product_name": 1}):
+            name = (row.get("product_name") or "").strip()
+            code = (row.get("product_code") or "").strip()
+            label = f"{name} ({code})" if code else name
+            if tokens:
+                score = len(set(self._tokenize(name)) & tokens)
+                if score:
+                    suggestions.append((score, label))
+            else:
+                suggestions.append((1, label))
+        suggestions.sort(key=lambda item: item[0], reverse=True)
+        return [label for _, label in suggestions[:limit]]
 
     def _list_module_names(self, module_collection: MongoCollection, ctx: TPContext) -> List[str]:
         modules: List[str] = []
@@ -180,6 +246,98 @@ class Tools:
         distinct = test_collection.distinct("subflow", {"tp_document_id": ctx.tp_document_id})
         flows = sorted(value for value in distinct if isinstance(value, str) and value)
         return flows
+
+    def _resolve_context(
+        self,
+        ingest_collection: MongoCollection,
+        product_collection: MongoCollection,
+        product_code: Optional[str],
+        tp_name: Optional[str],
+        *,
+        product_name_hint: Optional[str] = None,
+        question: str = "",
+    ) -> TPContext:
+        conditions: List[Dict[str, Any]] = []
+        product_code = (product_code or "").strip()
+        product_name_hint = (product_name_hint or "").strip()
+        if product_code and not self._looks_like_product_code(product_code):
+            product_name_hint = product_name_hint or product_code
+            product_code = ""
+        if tp_name:
+            conditions.append({"tp_name": tp_name.strip()})
+        if product_code:
+            conditions.append(
+                {
+                    "$or": [
+                        {"product.product_code": product_code},
+                        {"metadata.product_code": product_code},
+                    ]
+                }
+            )
+        if not product_code and product_name_hint:
+            regex = {"$regex": re.escape(product_name_hint), "$options": "i"}
+            conditions.append(
+                {
+                    "$or": [
+                        {"product.product_name": regex},
+                        {"metadata.product_name": regex},
+                    ]
+                }
+            )
+
+        attempts: List[Tuple[Dict[str, Any], Optional[str]]] = []
+        base_query: Dict[str, Any] = {"$and": conditions} if conditions else {}
+        attempts.append((base_query, product_name_hint or None))
+
+        if not product_code:
+            fuzzy_source = product_name_hint or question
+            fuzzy_match = self._infer_product_from_question(product_collection, fuzzy_source or "")
+            if fuzzy_match:
+                fuzzy_code = fuzzy_match.get("product_code")
+                if fuzzy_code:
+                    fuzzy_conditions = [
+                        entry for entry in conditions if not entry.get("$or") or "product.product_code" not in entry["$or"][0]
+                    ]
+                    fuzzy_conditions.append(
+                        {
+                            "$or": [
+                                {"product.product_code": fuzzy_code},
+                                {"metadata.product_code": fuzzy_code},
+                            ]
+                        }
+                    )
+                    attempts.append(({"$and": fuzzy_conditions} if fuzzy_conditions else {}, fuzzy_match.get("product_name")))
+
+        for query, inferred_name in attempts:
+            cursor = ingest_collection.find(query).sort("ingested_at", -1)
+            try:
+                doc = cursor.next()
+            except StopIteration:
+                continue
+            metadata = doc.get("metadata", {}) or {}
+            product_blob = doc.get("product", {}) or {}
+            return TPContext(
+                tp_name=doc.get("tp_name", "unknown"),
+                git_hash=doc.get("git_hash", "unknown"),
+                tp_document_id=doc["_id"],
+                product_code=product_blob.get("product_code") or metadata.get("product_code") or product_code,
+                product_name=product_blob.get("product_name")
+                or metadata.get("product_name")
+                or inferred_name
+                or product_name_hint,
+                ingested_at=doc.get("ingested_at"),
+                metadata=metadata,
+            )
+
+        suggestion_text = question or product_name_hint or product_code or "product"
+        suggestions = self._candidate_product_suggestions(product_collection, suggestion_text)
+        if not suggestions:
+            suggestions = self._candidate_product_suggestions(product_collection, "", limit=8)
+        message = (
+            "I couldn't find an ingest for that product description. "
+            "Please specify a product code (e.g., 8PXM) or pick one of the known names."
+        )
+        raise self.ContextResolutionError(message, suggestions)
 
     @staticmethod
     def _module_filters(module_key: Optional[str]) -> Tuple[Dict[str, Any], Optional[str]]:
@@ -268,47 +426,6 @@ class Tools:
 
     def _get_collection(self, client: MongoClientType, name: str) -> MongoCollection:
         return client[MONGO_DATABASE][name]
-
-    # Context resolution ------------------------------------------------------------------
-    def _resolve_context(
-        self,
-        ingest_collection: MongoCollection,
-        product_code: Optional[str],
-        tp_name: Optional[str],
-    ) -> TPContext:
-        conditions: List[Dict[str, Any]] = []
-        if tp_name:
-            conditions.append({"tp_name": tp_name.strip()})
-        if product_code:
-            product_code = product_code.strip()
-            conditions.append(
-                {
-                    "$or": [
-                        {"product.product_code": product_code},
-                        {"metadata.product_code": product_code},
-                    ]
-                }
-            )
-        query: Dict[str, Any] = {"$and": conditions} if conditions else {}
-        cursor = ingest_collection.find(query).sort("ingested_at", -1)
-        try:
-            doc = cursor.next()
-        except StopIteration:
-            raise ValueError(
-                "Unable to locate an ingest record matching TP "
-                f"{tp_name or 'any'} and product {product_code or 'any'}."
-            )
-        metadata = doc.get("metadata", {}) or {}
-        product_blob = doc.get("product", {}) or {}
-        return TPContext(
-            tp_name=doc.get("tp_name", "unknown"),
-            git_hash=doc.get("git_hash", "unknown"),
-            tp_document_id=doc["_id"],
-            product_code=product_blob.get("product_code") or metadata.get("product_code") or product_code,
-            product_name=product_blob.get("product_name") or metadata.get("product_name"),
-            ingested_at=doc.get("ingested_at"),
-            metadata=metadata,
-        )
 
     # Query helpers ----------------------------------------------------------------------
     def _fetch_product_state(self, product_collection: MongoCollection, product_code: Optional[str]) -> Optional[dict]:
@@ -531,11 +648,25 @@ class Tools:
         tp_name = tp_name or user_valves.tp_name or self.valves.default_tp_name
 
         ingest_collection = self._get_collection(client, INGEST_COLLECTION)
+        product_collection = self._get_collection(client, PRODUCT_COLLECTION)
         classification = QuestionClassifier.classify(question)
 
         try:
-            ctx = self._resolve_context(ingest_collection, product_code, tp_name)
-        except (StopIteration, ValueError) as exc:
+            ctx = self._resolve_context(
+                ingest_collection,
+                product_collection,
+                product_code,
+                tp_name,
+                question=question,
+            )
+        except self.ContextResolutionError as exc:
+            suggestion_lines = "\n".join(f"- {label}" for label in exc.suggestions) if exc.suggestions else ""
+            guidance = str(exc)
+            if suggestion_lines:
+                guidance = f"{guidance}\nTry one of these products next time:\n{suggestion_lines}"
+            await emitter.error(guidance)
+            return guidance
+        except ValueError as exc:
             await emitter.error(str(exc))
             return str(exc)
 
@@ -547,7 +678,6 @@ class Tools:
         port_collection = self._get_collection(client, PORT_RESULTS_COLLECTION)
         setpoints_collection = self._get_collection(client, SETPOINTS_COLLECTION)
         artifacts_collection = self._get_collection(client, ARTIFACTS_COLLECTION)
-        product_collection = self._get_collection(client, PRODUCT_COLLECTION)
 
         modules_catalog = self._list_module_names(module_collection, ctx)
         flows_catalog = self._list_subflows(test_collection, ctx)
