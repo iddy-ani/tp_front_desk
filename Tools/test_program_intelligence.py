@@ -646,10 +646,11 @@ class Tools:
     def _fetch_hvqk_module_inventory(
         self,
         hvqk_collection: MongoCollection,
-        ctx: TPContext,
+        ctx: TPContext | Mapping[str, Any],
     ) -> List[dict]:
+        tp_document_id = self._ensure_tp_document_id(ctx)
         pipeline = [
-            {"$match": {"tp_document_id": ctx.tp_document_id}},
+            {"$match": {"tp_document_id": tp_document_id}},
             {"$group": {"_id": "$module_name", "files": {"$addToSet": "$file_name"}, "count": {"$sum": 1}}},
             {"$sort": {"_id": 1}},
         ]
@@ -698,10 +699,11 @@ class Tools:
     def _fetch_hvqk_configs(
         self,
         hvqk_collection: MongoCollection,
-        ctx: TPContext,
+        ctx: TPContext | Mapping[str, Any],
         module_name: Optional[str] = None,
     ) -> List[dict]:
-        filters: Dict[str, Any] = {"tp_document_id": ctx.tp_document_id}
+        tp_document_id = self._ensure_tp_document_id(ctx)
+        filters: Dict[str, Any] = {"tp_document_id": tp_document_id}
         if module_name:
             filters["module_name"] = module_name
         cursor = hvqk_collection.find(filters).sort("file_name", 1)
