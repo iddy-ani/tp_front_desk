@@ -168,7 +168,74 @@ class Tools:
         if not value:
             return False
         stripped = value.strip().upper()
-        return bool(re.fullmatch(r"[0-9A-Z]{3,}", stripped))
+        if not re.fullmatch(r"[0-9A-Z]+", stripped):
+            return False
+        if len(stripped) < 4 or len(stripped) > 8:
+            return False
+        if not stripped.startswith("8"):
+            return False
+        return True
+
+    @staticmethod
+    def _looks_like_tp_name(value: str) -> bool:
+        if not value:
+            return False
+        stripped = value.strip().upper()
+        if len(stripped) < 12 or len(stripped) > 24:
+            return False
+        if not stripped.isalnum():
+            return False
+        if not stripped[:3].isalpha():
+            return False
+        if not re.search(r"[0-9]", stripped):
+            return False
+        return True
+
+    @staticmethod
+    def _scan_identifier_tokens(text: str) -> List[str]:
+        return re.findall(r"[A-Z0-9]{4,}", (text or "").upper())
+
+    def _extract_tp_name_hint(self, question: str) -> Optional[str]:
+        for token in sorted(self._scan_identifier_tokens(question), key=len, reverse=True):
+            if self._looks_like_tp_name(token):
+                return token
+        return None
+
+    def _extract_product_code_hint(self, question: str) -> Optional[str]:
+        for token in self._scan_identifier_tokens(question):
+            if self._looks_like_product_code(token):
+                return token
+        return None
+
+    def _normalize_identifiers(
+        self,
+        product_collection: MongoCollection,
+        question: str,
+        product_code: str,
+        tp_name: str,
+    ) -> Tuple[str, str]:
+        normalized_product = (product_code or "").strip().upper()
+        normalized_tp = (tp_name or "").strip().upper()
+
+        if normalized_product and not self._looks_like_product_code(normalized_product):
+            if not normalized_tp and self._looks_like_tp_name(normalized_product):
+                normalized_tp = normalized_product
+            normalized_product = ""
+
+        if not normalized_tp:
+            normalized_tp = self._extract_tp_name_hint(question) or normalized_tp
+
+        if not normalized_product:
+            candidate = self._extract_product_code_hint(question)
+            if candidate:
+                normalized_product = candidate
+
+        if normalized_product:
+            existing = product_collection.find_one({"product_code": normalized_product}, {"_id": 1})
+            if not existing:
+                normalized_product = ""
+
+        return normalized_product, normalized_tp
 
     def _match_catalog_token(self, question: str, catalog: Iterable[str]) -> Optional[str]:
         normalized_question = self._normalize_token(question)
@@ -649,6 +716,12 @@ class Tools:
 
         ingest_collection = self._get_collection(client, INGEST_COLLECTION)
         product_collection = self._get_collection(client, PRODUCT_COLLECTION)
+        product_code, tp_name = self._normalize_identifiers(
+            product_collection,
+            question,
+            product_code,
+            tp_name,
+        )
         classification = QuestionClassifier.classify(question)
 
         try:
