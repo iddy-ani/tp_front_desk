@@ -15,7 +15,7 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple, TYPE_CHECKING
 
 from pymongo import MongoClient
 
@@ -295,6 +295,85 @@ class Tools:
         suggestions.sort(key=lambda item: item[0], reverse=True)
         return [label for _, label in suggestions[:limit]]
 
+    @staticmethod
+    def _ensure_tp_document_id(ctx: TPContext | Mapping[str, Any]) -> str:
+        if isinstance(ctx, TPContext):
+            candidate = ctx.tp_document_id
+        elif isinstance(ctx, Mapping):
+            candidate = ctx.get("tp_document_id") or ctx.get("_id") or ""
+        else:  # pragma: no cover - defensive guard for unexpected injections
+            raise TypeError("Context payload must be a TPContext or mapping")
+
+        if not candidate:
+            raise ValueError(
+                "Context does not include a tp_document_id. "
+                "Call answer_tp_question first or provide a full context payload."
+            )
+        return str(candidate)
+
+    def _hydrate_context(
+        self,
+        ctx: TPContext | Mapping[str, Any],
+        *,
+        question_hint: str = "",
+    ) -> TPContext:
+        if isinstance(ctx, TPContext):
+            return ctx
+        if not isinstance(ctx, Mapping):  # pragma: no cover - consistent defensive guard
+            raise TypeError("Context payload must be a TPContext or mapping")
+
+        tp_document_id = ctx.get("tp_document_id") or ctx.get("_id")
+        if tp_document_id:
+            return TPContext(
+                tp_name=ctx.get("tp_name") or "unknown",
+                git_hash=ctx.get("git_hash") or "unknown",
+                tp_document_id=str(tp_document_id),
+                product_code=ctx.get("product_code"),
+                product_name=ctx.get("product_name"),
+                ingested_at=ctx.get("ingested_at"),
+                metadata=ctx.get("metadata") or {},
+            )
+
+        client = self._get_mongo_client(None)
+        if client is None:
+            raise ValueError(
+                "Context does not include a tp_document_id and Mongo connection is unavailable."
+            )
+
+        ingest_collection = self._get_collection(client, INGEST_COLLECTION)
+        product_collection = self._get_collection(client, PRODUCT_COLLECTION)
+
+        raw_product_code = (ctx.get("product_code") or "").strip()
+        raw_tp_name = (ctx.get("tp_name") or "").strip()
+        name_hint = ctx.get("product_name") or ctx.get("product_label") or ""
+        question_hint = (
+            question_hint
+            or ctx.get("question")
+            or ctx.get("prompt")
+            or ctx.get("query")
+            or ""
+        )
+
+        if not raw_tp_name and self._looks_like_tp_name(raw_product_code):
+            raw_tp_name = raw_product_code
+            raw_product_code = ""
+
+        normalized_product, normalized_tp = self._normalize_identifiers(
+            product_collection,
+            question_hint,
+            raw_product_code,
+            raw_tp_name,
+        )
+
+        return self._resolve_context(
+            ingest_collection,
+            product_collection,
+            normalized_product,
+            normalized_tp,
+            product_name_hint=name_hint,
+            question=question_hint,
+        )
+
     def _list_module_names(self, module_collection: MongoCollection, ctx: TPContext) -> List[str]:
         modules: List[str] = []
         cursor = (
@@ -423,13 +502,17 @@ class Tools:
     def _fetch_test_rows(
         self,
         test_collection: MongoCollection,
-        ctx: TPContext,
+        ctx: TPContext | Mapping[str, Any],
         extra_filters: Optional[Dict[str, Any]] = None,
         *,
         limit: int = 60,
         sort_field: str = "instance_name",
     ) -> List[dict]:
-        filters: Dict[str, Any] = {"tp_document_id": ctx.tp_document_id}
+        try:
+            tp_document_id = self._hydrate_context(ctx).tp_document_id
+        except ValueError:
+            tp_document_id = self._ensure_tp_document_id(ctx)
+        filters: Dict[str, Any] = {"tp_document_id": tp_document_id}
         if extra_filters:
             filters.update(extra_filters)
         projection = {
@@ -549,11 +632,31 @@ class Tools:
             summary[row["_id"] or "unknown"] = row["count"]
         return summary
 
-    def _summarize_hvqk_modules(self, test_collection: MongoCollection, ctx: TPContext) -> List[dict]:
+    def _summarize_hvqk_modules(
+        self,
+        test_collection: MongoCollection | Mapping[str, Any] | None,
+        ctx: TPContext | Mapping[str, Any],
+    ) -> List[dict]:
+        collection_handle: MongoCollection
+        if hasattr(test_collection, "aggregate"):
+            collection_handle = test_collection  # type: ignore[assignment]
+        else:
+            client = self._get_mongo_client(None)
+            if client is None:
+                raise ValueError(
+                    "Test collection handle missing and Mongo connection is unavailable."
+                )
+            collection_handle = self._get_collection(client, TEST_INSTANCES_COLLECTION)
+        try:
+            tp_context = self._hydrate_context(ctx)
+        except ValueError:
+            tp_document_id = self._ensure_tp_document_id(ctx)
+        else:
+            tp_document_id = tp_context.tp_document_id
         pipeline = [
             {
                 "$match": {
-                    "tp_document_id": ctx.tp_document_id,
+                    "tp_document_id": tp_document_id,
                     "subflow": {"$regex": "HVQK", "$options": "i"},
                 }
             },
@@ -569,7 +672,7 @@ class Tools:
             },
             {"$sort": {"_id.subflow": 1, "count": -1}},
         ]
-        return list(test_collection.aggregate(pipeline))
+        return list(collection_handle.aggregate(pipeline))
 
     # Answer generators -----------------------------------------------------------------
     def _format_current_tp_answer(self, ctx: TPContext, product_state: Optional[dict]) -> str:

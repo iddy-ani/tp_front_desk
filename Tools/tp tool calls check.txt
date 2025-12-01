@@ -1,0 +1,384 @@
+Question - Q1:
+What is the current test program for PantherLake CPU-U
+
+Tool call:
+Tool answer_tp_question result: ✅ Current ingest for PTUSDJXA1H21G402546
+Product: PantherLake CPU-U (8PXM)
+Git hash: 5cb381ab413b800114b93390f62c35857f1685d8
+Ingested: 2025-11-20T11:58:37.968000
+Product config: Configured latest TP: PTUSDJXA1H21G402546; Network path: \\\\alpfile3.al.intel.com\\sdx_ods\\program\\1278\\prod\\hdmtprogs\\ptl_ptu_sds
+Flow tables: Regular Flows, Fork Flows, Special Flows [] []
+
+Question - Q2:
+What tests does it have
+
+Tool Call:
+Tool answer_tp_question result: 📋 Sample tests for PTUSDJXA1H21G402546 (250 rows scanned)
+- ATOM: ARR_ATOM::ALL_ATOMHPC_PATMOD_E_END_X_X_X_X_NBL_DISABLE, ARR_ATOM::ALL_ATOMHPC_PATMOD_E_END_X_X_X_X_NBL_ENABLE, ARR_ATOM::ALL_ATOMHPC_SHMOO_E_STRESS_TITO_ATOM_MAX_LFM_0800_LSA, ARR_ATOM::ALL_ATOMHPC_SHMOO_E_STRESS_TITO_ATOM_MAX_LFM_0800_SSA, ARR_ATOM::ALL_ATOMLPC_AUX_E_POSTHVQK_TITO_X_X_X_0800_SSA_B17…
+Status mix: EDC:152, Kill:43, Bypassed:26, Monitor:18, Float:11
+
+Flows (30 entries):
+  1: ALARM
+  2: BEGIN
+  3: BIN
+  4: DUTCHANGEFLOW
+  5: END
+  6: ENDTFM
+  7: ENDXFM
+  8: FAILFLOW
+  9: FINAL
+  10: FMAX
+  11: INIT
+  12: LOTENDFLOW
+  13: LOTSTARTFLOW
+  14: MAIN
+  15: POSTHVQK
+  16: PREHVQK
+  17: RETURN
+  18: SDTALARM
+  19: SDTBEGIN
+  20: SDTBIN
+  21: SDTEND
+  22: SDTENDTFM
+  23: SDTENDXFM
+  24: SDTFINAL
+  25: SDTSTART
+  26: START
+  27: STARTFAILFLOW
+  28: STRESS
+  29: TESTPLANENDFLOW
+  30: TESTPLANSTARTFLOW
+
+Modules (50 entries):
+  1: ARR_ATOM
+  2: ARR_CCF
+  3: ARR_COMMON
+  4: ARR_CORE
+  5: ARR_DIM
+  6: ARR_NPU
+  7: ARR_SOC
+  8: CLK_DCM
+  9: CLK_LJPLL
+  10: CLK_START
+  11: FUN_ATOM
+  12: FUN_CORE
+  13: FUN_RESET
+  14: IO_D2D
+  15: MIO_DDR_AC
+  16: MIO_DDR_DC
+  17: PTH_BGREF
+  18: PTH_CEP
+  19: PTH_DIODE
+  20: PTH_DLVR
+  21: PTH_DTS
+  22: PTH_POWER
+  23: PTH_POWER_INIT
+  24: PTH_SOAK
+  25: SCN_ATOM
+  26: SCN_CCF
+  27: SCN_CORE
+  28: SCN_DIM
+  29: SCN_NPU
+  30: SCN_UNCORE
+  31: SIO_BSCAN
+  32: SIO_HPTP
+  33: TPI_ADTL
+  34: TPI_BASE
+  35: TPI_BASE_VERIFY
+  36: TPI_BIN
+  37: TPI_DFF
+  38: TPI_EDM
+  39: TPI_FUSE
+  40: TPI_FUSE_BIN26 [] []
+
+Question - Q3:
+I am interested in test for the SCN_CORE module in the PREHVQK flow.
+
+  Tool Call:
+  Tool answer_tp_question result: 📐 HVQK coverage for SCN_CORE (87 shown, limit 250)
+- SCN_CORE::ATSPEED_CORE0_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_VMIN_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow POSTHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_VMIN_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow POSTHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_VMIN_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow POSTHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_VMIN_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow POSTHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type SB | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type SB | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type SB | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE3_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA [] []
+
+Question - Q4:
+Can you provide more details on all ATSPEED tests?
+
+Tool call:
+Tool answer_tp_question result: 📐 HVQK coverage for SCN_CORE (87 shown, limit 250)
+- SCN_CORE::ATSPEED_CORE0_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_VMIN_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow POSTHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE0_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_VMIN_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow POSTHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE1_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_VMIN_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow POSTHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE2_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_prepst_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_fullsuite_x_allatspeed_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_VMIN_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow POSTHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::ATSPEED_CORE3_VMIN_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type VMIN | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core3_prepst_x_allatspeedvbump_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type SB | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE0_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core0_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type SB | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE1_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core1_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_HRY_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Monitor | SubFlow PREHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_SB_K_PREHVQK_N_VCCIA_NOM_LFM_0800_POR_HPTPBASE | Status Kill | SubFlow PREHVQK | Module SCN::CORE | Type SB | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_SPOFI_E_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk100_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE2_SPOFI_E_PREHVQK_N_VCCIA_NOM_LFM_0800_POR | Status EDC | SubFlow PREHVQK | Module SCN::CORE | Type SPOFI | Level SCN_CORE::SBF_lvl_VCCIA_HPTP_MAX_SCAN | Timing SCN_CORE::cpu_ctf_timing_perpin_SCAN_CPU_tclk100_hclk400_bclk400 | Plist core_core2_x_x_chain1hot_ssn400_x_x_x_edt_x_mclk_list
+- SCN_CORE::CHAIN_CORE3_HRY_K_POSTHVQK_N_VCCIA_NOM_LFM_0800_POR | Status Bypassed | SubFlow POSTHVQK | Module SCN::CORE | Type HRY | Level SCN_CORE::SBF_lvl_VCCIA [] []
+
+Question - Q5:
+Does PTUSDJXA1H21G402546 have VCC continuity in the flow and where
+
+Tool call:
+Tool answer_tp_question result: 🔍 VCC continuity flows hits for 'VCC' (150 results)
+- Module ARR_ATOM | Flow ARR_ATOM_POSTHVQK | Instance ALL_ATOM_SCREEN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_HPC_SKIP (index 35)
+- Module ARR_ATOM | Flow ATOM_CORE_INTM_LP | Instance LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_STATE_INTM (index 24)
+- Module ARR_ATOM | Flow ATOM_CORE_PMOVI_LP | Instance LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_STATE_PMOVI (index 23)
+- Module ARR_ATOM | Flow ATOM_PREREPAIR_SHMOOS | Instance SSA_ATOM_SHMOO_E_BEGIN_TITO_VCCATOM_NOM_LFM_0800_L2_ALL (index 1)
+- Module ARR_ATOM | Flow BLS_LVLF | Instance LSA_ATOMLPC_BLS_K_END_TITO_VCCATOM_NOM_LFM_0800_RF_ALL (index 39)
+- Module ARR_ATOM | Flow KS_ATOM_LP | Instance SSA_ATOMLPC_VCHK_K_END_TITO_VCCATOM_NOM_LFM_0800_L2_ALL (index 36)
+- Module ARR_ATOM | Flow L2_ALL_MAX_REP_LPC | Instance XSA_ATOMLPC_HRY_E_BEGIN_TITO_VCCATOM_MAX_LFM_0800_L2_ALL_PRE_HRY_1200MV (index 20)
+- Module ARR_ATOM | Flow L2_ALL_MAX_REP_LPC_SDT | Instance XSA_ATOMLPC_HRY_E_SDTBEGIN_TITO_VCCATOM_MAX_LFM_0800_L2_ALL_PRE_HRY_1300MV (index 53)
+
+📐 TPI_VCC continuity instances (100 shown, limit 100)
+- TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POSTSURGE_POWERDOWN | Status EDC | SubFlow FINAL | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POSTSURGE_POWERDOWN_COLD | Status EDC | SubFlow FINAL | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POWERUP | Status EDC | SubFlow FINAL | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_FINAL_X_X_X_X_POWERUP_COLD | Status EDC | SubFlow FINAL | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_SDTFINAL_X_X_X_X_POWERDOWN | Status EDC | SubFlow SDTFINAL | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_SDTFINAL_X_X_X_X_PREVCC_POWERDOWN | Status EDC | SubFlow SDTFINAL | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_SDTSTART_X_X_X_X_POSTSURGE_POWERDOWN | Status EDC | SubFlow SDTSTART | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_SDTSTART_X_X_X_X_POWERDOWN | Status EDC | SubFlow SDTSTART | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_POSTCHAR_PWRDN | Status Bypassed | SubFlow START | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_POSTPOWERDOWN | Status EDC | SubFlow START | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_POSTPOWERDOWN_EDC | Status Bypassed | SubFlow START | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_PREPOWERDOWN | Status EDC | SubFlow START | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_ISVM_PREPOWERDOWN_EDC | Status Bypassed | SubFlow START | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_POSTSURGE_POWERDOWN_NOM | Status EDC | SubFlow START | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_POWERDOWN | Status EDC | SubFlow START | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_START_X_X_X_X_X_POWERDOWN_600MV | Status EDC | SubFlow START | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_STRESS_X_X_X_X_POSTARR_POWERDOWN | Status EDC | SubFlow STRESS | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_STRESS_X_X_X_X_POSTARR_POWERUP | Status EDC | SubFlow STRESS | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_STRESS_X_X_X_X_POSTSCAN_POWERDOWN | Status EDC | SubFlow STRESS | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_STRESS_X_X_X_X_POSTSCAN_POWERUP | Status EDC | SubFlow STRESS | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_STRESS_X_X_X_X_POSTSIUP_POWERDOWN | Status EDC | SubFlow STRESS | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_STRESS_X_X_X_X_POSTSIUP_POWERUP | Status EDC | SubFlow STRESS | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_STRESS_X_X_X_X_PRESIUP_POWERDOWN | Status EDC | SubFlow STRESS | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_ALL_DC_E_STRESS_X_X_X_X_PRESIUP_POWERUP | Status EDC | SubFlow STRESS | Module TPI::VCC | Type DC | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_ISVM_E_START_X_X_X_X_PRESURGE_PARALLEL | Status Bypassed | SubFlow START | Module TPI::VCC | Type ISVM | Level BASE::dc_spex_ISVM_parallel_hc_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_ISVM_K_START_X_X_X_X_PRESURGE_PARALLEL | Status Monitor | SubFlow START | Module TPI::VCC | Type ISVM | Level BASE::dc_spex_ISVM_parallel_hc_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_ISVM_K_START_X_X_X_X_PRESURGE_SERIAL | Status Kill | SubFlow START | Module TPI::VCC | Type ISVM | Level BASE::dc_spex_ISVM_hc_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_FINAL_X_X_VCHAR_X_POSTSURGE_PARALLEL | Status Monitor | SubFlow FINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_FINAL_X_X_VCHAR_X_POSTSURGE_PARALLEL_COLD | Status Monitor | SubFlow FINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_cold_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_FINAL_X_X_VCHAR_X_POSTSURGE_SERIAL | Status Kill | SubFlow FINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_FINAL_X_X_VCHAR_X_POSTSURGE_SERIAL_COLD | Status Kill | SubFlow FINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_cold_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_SDTFINAL_X_X_VCHAR_X_POSTSURGE_PARALLEL | Status Monitor | SubFlow SDTFINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDT_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_SDTFINAL_X_X_VCHAR_X_POSTSURGE_SERIAL | Status Monitor | SubFlow SDTFINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_SDT_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_SDTSTART_X_X_VCHAR_X_POSTSURGE_PARALLEL | Status Monitor | SubFlow SDTSTART | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDT_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_SDTSTART_X_X_VCHAR_X_POSTSURGE_SERIAL | Status Kill | SubFlow SDTSTART | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_SDT_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_START_X_X_VCHAR_X_POSTSURGE_PARALLEL | Status Monitor | SubFlow START | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_START_X_X_VCHAR_X_POSTSURGE_SERIAL | Status Kill | SubFlow START | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_START_X_X_VCHAR_X_PRESURGE_PARALLEL | Status Monitor | SubFlow START | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_START_X_X_VCHAR_X_PRESURGE_SERIAL | Status Kill | SubFlow START | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_STRESS_X_X_VCHAR_X_POSTARR_PARALLEL | Status Kill | SubFlow STRESS | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_STRESS_X_X_VCHAR_X_POSTSCAN_PARALLEL | Status Kill | SubFlow STRESS | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_STRESS_X_X_VCHAR_X_POSTSIUP_PARALLEL | Status Kill | SubFlow STRESS | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HC_VSIM_K_STRESS_X_X_VCHAR_X_PRESIUP_PARALLEL | Status Kill | SubFlow STRESS | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDS_hc_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HV_VSIM_K_FINAL_X_X_VCHAR_X_POSTSURGE_PARALLEL | Status Monitor | SubFlow FINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDS_hv_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HV_VSIM_K_FINAL_X_X_VCHAR_X_POSTSURGE_PARALLEL_COLD | Status Monitor | SubFlow FINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_cold_hv_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HV_VSIM_K_FINAL_X_X_VCHAR_X_POSTSURGE_SERIAL | Status Kill | SubFlow FINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_SDS_hv_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HV_VSIM_K_FINAL_X_X_VCHAR_X_POSTSURGE_SERIAL_COLD | Status Kill | SubFlow FINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_cold_hv_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HV_VSIM_K_SDTFINAL_X_X_VCHAR_X_POSTSURGE_PARALLEL | Status Monitor | SubFlow SDTFINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_parallel_SDT_hv_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HV_VSIM_K_SDTFINAL_X_X_VCHAR_X_POSTSURGE_SERIAL | Status Monitor | SubFlow SDTFINAL | Module TPI::VCC | Type VSIM | Level BASE::dc_spex_VSIM_SDT_hv_v2_lvl | Timing NoTimings | Plist NOPLIST
+- TPI_VCC::CONT_HV_VSIM_K_SDTSTART_X_ [] []
+
+Question - Q6: What does it look like
+
+Tool Call:
+Tool answer_tp_question result: 📊 Snapshot for PTUSDJXA1H21G402546
+Top modules:
+- ARR_COMMON (tests=1975, kill=8, kill%=0.5)
+- SCN_DIM (tests=307, kill=53, kill%=41.73)
+- SCN_CORE (tests=289, kill=54, kill%=43.2)
+- SCN_NPU (tests=279, kill=49, kill%=44.55)
+- ARR_ATOM (tests=262, kill=51, kill%=22.67)
+Artifacts:
+flow:1, plist:1, report-extra:9, dll:1, specs:1, gsds:1, levels:1, vmin:1, env:1, git:2, report:6
+
+📐 Representative PAS excerpt (15 shown, limit 15)
+- ARR_ATOM::ALL_ATOMHPC_PATMOD_E_END_X_X_X_X_NBL_DISABLE | Status EDC | SubFlow END | Module ARR::ATOM | Type PATMOD | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::ALL_ATOMHPC_PATMOD_E_END_X_X_X_X_NBL_ENABLE | Status EDC | SubFlow END | Module ARR::ATOM | Type PATMOD | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::ALL_ATOMHPC_SHMOO_E_STRESS_TITO_ATOM_MAX_LFM_0800_LSA | Status Float | SubFlow STRESS | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::ALL_ATOMHPC_SHMOO_E_STRESS_TITO_ATOM_MAX_LFM_0800_SSA | Status Bypassed | SubFlow STRESS | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::ALL_ATOMLPC_AUX_E_POSTHVQK_TITO_X_X_X_0800_SSA_B17 | Status Float | SubFlow POSTHVQK | Module ARR::ATOM | Type AUX | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::ALL_ATOMLPC_AUX_K_STRESS_TITO_X_X_X_0800_SSA_B17 | Status Bypassed | SubFlow STRESS | Module ARR::ATOM | Type AUX | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::ALL_ATOMLPC_HVQK_K_STRESS_TITO_ATOM_MAX_LFM_0800_IFRSTRESS | Status Monitor | SubFlow STRESS | Module ARR::ATOM | Type HVQK | Level BASE::SBF_HVQK_ATOMLP_HVQK | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_hvqk_tito_atom_lpc_ifrstrss_list
+- ARR_ATOM::ALL_ATOMLPC_HVQK_K_STRESS_TITO_ATOM_MAX_LFM_0800_L2_RED | Status Monitor | SubFlow STRESS | Module ARR::ATOM | Type HVQK | Level BASE::SBF_HVQK_ATOMLP_HVQK | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_hvqk_tito_atom_lpc_list_red
+- ARR_ATOM::ALL_ATOMLPC_HVQK_K_STRESS_TITO_ATOM_MAX_LFM_0800_LSA | Status Monitor | SubFlow STRESS | Module ARR::ATOM | Type HVQK | Level BASE::SBF_HVQK_ATOMLP_HVQK | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_hvqk_tito_atom_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_PATMOD_E_SDTEND_X_X_X_X_NBL_DISABLE | Status EDC | SubFlow SDTEND | Module ARR::ATOM | Type PATMOD | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::ALL_ATOMLPC_PATMOD_E_SDTEND_X_X_X_X_NBL_ENABLE | Status EDC | SubFlow SDTEND | Module ARR::ATOM | Type PATMOD | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::ALL_ATOMLPC_SHMOO_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_intermediate_flat_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_SHMOO_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_PMOVI | Status Bypassed | SubFlow PREHVQK | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_rom_pmovi_flat_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_SHMOO_E_SDTEND_TITO_ATOM_MAX_LFM_0800_LSA_ROM_LP | Status EDC | SubFlow SDTEND | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_rom_pmovi_flat_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_SHMOO_E_STRESS_TITO_ATOM_MAX_LFM_0800_ROM | Status EDC | SubFlow STRESS | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list [] []
+
+Question - Q7: Does PTUSDJXA1H21G402546 have a HVQK water fall flow
+
+Tool call:
+Tool answer_tp_question result: 🔍 HVQK/Waterfall flow content hits for 'HVQK' (131 results)
+- Module ARR_ATOM | Flow ARR_ATOM_POSTHVQK | Instance ALL_ATOM_SCREEN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_HPC_SKIP (index 35)
+- Module ARR_ATOM | Flow ARR_ATOM_PREHVQK | Instance CTRL_X_VMIN_K_PREHVQK_X_X_X_X_ARR_ATOM_LS_PRED (index 27)
+- Module ARR_ATOM | Flow ATOM_CORE_INTM_LP | Instance LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_STATE_INTM (index 24)
+- Module ARR_ATOM | Flow ATOM_CORE_PMOVI_LP | Instance LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_STATE_PMOVI (index 23)
+- Module ARR_ATOM | Flow POSTHVQK_ATOM_LP | Instance SSA_ATOMLPC_VMIN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_PMOVI (index 34)
+- Module ARR_ATOM | Flow PREHVQK_ATOM_LP | Instance SSA_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_INTM (index 26)
+- Module ARR_ATOM | Flow SHMOO_PRE_LP | Instance SSA_ATOMLPC_SHMOO_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_PMOVI (index 25)
+- Module ARR_CCF | Flow ARR_CCF_POSTHVQK | Instance SSA_CCF_VMIN_K_POSTHVQK_TITO_VCCIA_MIN_LFM_0800_CBO_INTM (index 67)
+
+🌊 HVQK waterfall coverage:
+- POSTHVQK: SCN_DIM (35 tests)
+- POSTHVQK: ARR_DIM (30 tests)
+- POSTHVQK: SCN_NPU (28 tests)
+- POSTHVQK: SCN_CORE (28 tests)
+- POSTHVQK: SCN_UNCORE (21 tests)
+- POSTHVQK: ARR_SOC (18 tests)
+- POSTHVQK: ARR_CORE (17 tests)
+- POSTHVQK: SCN_CCF (14 tests)
+- POSTHVQK: ARR_CCF (13 tests)
+- POSTHVQK: SCN_ATOM (10 tests)
+- POSTHVQK: ARR_ATOM (8 tests)
+- POSTHVQK: TPI_RECOVERY (7 tests)
+- POSTHVQK: TPI_BIN (6 tests)
+- POSTHVQK: PTH_DIODE (4 tests)
+- POSTHVQK: ARR_NPU (4 tests)
+- POSTHVQK: MIO_DDR (1 tests)
+- POSTHVQK: PTH_BGREF (1 tests)
+- PREHVQK: SCN_DIM (69 tests)
+- PREHVQK: SCN_CORE (59 tests)
+- PREHVQK: SCN_NPU (58 tests)
+- PREHVQK: SCN_UNCORE (44 tests)
+- PREHVQK: ARR_ATOM (41 tests)
+- PREHVQK: ARR_DIM (34 tests)
+- PREHVQK: ARR_SOC (32 tests)
+- PREHVQK: ARR_CORE (30 tests)
+- PREHVQK: SCN_CCF (30 tests)
+- PREHVQK: ARR_CCF (29 tests)
+- PREHVQK: SCN_ATOM (23 tests)
+- PREHVQK: ARR_COMMON (12 tests)
+- PREHVQK: ARR_NPU (12 tests)
+- PREHVQK: TPI_RECOVERY (6 tests)
+- PREHVQK: FUN_CORE (5 tests)
+- PREHVQK: TPI_BIN (4 tests)
+- PREHVQK: PTH_DIODE (2 tests)
+- PREHVQK: MIO_DDR (1 tests) [] []
+
+Question - Q8: What does the ARR_ATOM HVQK waterfall look like?
+
+Tool call:
+Tool answer_tp_question result: 📐 HVQK coverage for ARR_ATOM (49 shown, limit 250)
+- ARR_ATOM::ALL_ATOMLPC_AUX_E_POSTHVQK_TITO_X_X_X_0800_SSA_B17 | Status Float | SubFlow POSTHVQK | Module ARR::ATOM | Type AUX | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::ALL_ATOMLPC_SHMOO_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_intermediate_flat_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_SHMOO_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_PMOVI | Status Bypassed | SubFlow PREHVQK | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_rom_pmovi_flat_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_VMIN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_GALCOL | Status Bypassed | SubFlow POSTHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_flat_galcol_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_VMIN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_INTM | Status Kill | SubFlow POSTHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_intermediate_flat_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_VMIN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_PMOVI | Status Bypassed | SubFlow POSTHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_rom_pmovi_flat_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_GALCOL | Status Bypassed | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_flat_galcol_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_INTM | Status Kill | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_intermediate_flat_lpc_list
+- ARR_ATOM::ALL_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_PMOVI | Status Bypassed | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_rom_pmovi_flat_lpc_list
+- ARR_ATOM::ALL_ATOM_SCREEN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_HPC_SKIP | Status Monitor | SubFlow POSTHVQK | Module ARR::ATOM | Type SCREEN | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::ALL_ATOM_SCREEN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_SETUP | Status Monitor | SubFlow PREHVQK | Module ARR::ATOM | Type SCREEN | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::ALL_ATOM_SCREEN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_VMIN_FWD | Status Monitor | SubFlow PREHVQK | Module ARR::ATOM | Type SCREEN | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::CTRL_X_SCREEN_K_PREHVQK_X_X_X_X_SETUPSTRESSBYPASS | Status Kill | SubFlow PREHVQK | Module ARR::ATOM | Type SCREEN | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::CTRL_X_VMIN_K_PREHVQK_X_X_X_X_ARR_ATOM_LS_PRED | Status Kill | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level NoLevels | Timing NoTimings | Plist NOPLIST
+- ARR_ATOM::LSA_ATOMLPC_SHMOO_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_GALCOL | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_lsa_flat_galcol_lpc_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_AG2_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_AG2_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_ARR_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_ARR_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_BPI_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_BPI_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_EBXQ_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_EBXQ_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_FPC_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_FPC_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_IC_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_IC_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_IEC_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_IEC_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_C6S_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_C6S_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_LRU_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_LRU_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_STATE_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_L2_STATE_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_MEC_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_MEC_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_MS_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::LSA_ATOMLPC_VMIN_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_MS_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::ROM_ATOMLPC_SHMOO_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_ROM_MS_PMOVI | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_rom_ms_lpc_list
+- ARR_ATOM::ROM_ATOMLPC_VMIN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_ROM_MS_PMOVI | Status Kill | SubFlow POSTHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_rom_ms_lpc_list
+- ARR_ATOM::ROM_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_ROM_MS_INTM | Status Bypassed | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist ptl_dummy_list
+- ARR_ATOM::ROM_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_ROM_MS_PMOVI | Status Kill | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_rom_ms_lpc_list
+- ARR_ATOM::SSA_ATOMLPC_SHMOO_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_INTM | Status EDC | SubFlow PREHVQK | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_direct_ssa_intermediate_flat_lpc_list
+- ARR_ATOM::SSA_ATOMLPC_SHMOO_E_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_PMOVI | Status Bypassed | SubFlow PREHVQK | Module ARR::ATOM | Type SHMOO | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_direct_ssa_pmovi_flat_lpc_list
+- ARR_ATOM::SSA_ATOMLPC_VMIN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_INTM | Status Kill | SubFlow POSTHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_direct_ssa_intermediate_flat_lpc_list
+- ARR_ATOM::SSA_ATOMLPC_VMIN_K_POSTHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_PMOVI | Status Bypassed | SubFlow POSTHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_direct_ssa_pmovi_flat_lpc_list
+- ARR_ATOM::SSA_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_INTM | Status Kill | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_direct_ssa_intermediate_flat_lpc_list
+- ARR_ATOM::SSA_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_PMOVI | Status Float | SubFlow PREHVQK | Module ARR::ATOM | Type VMIN | Level BASE::SBF_ATOMHP_nom_lvl | Timing BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | Plist array_pbist_prepost_tito_atom_direct_ssa_pmovi_flat_lpc_list [] []
