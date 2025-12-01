@@ -217,3 +217,14 @@ def artifact_reference_to_document(entry: models.ArtifactReference) -> Dict[str,
         "sha256": entry.sha256,
         "exists_on_disk": entry.exists_on_disk,
     }
+
+
+def hvqk_config_entry_to_document(entry: models.HVQKConfigEntry) -> Dict[str, Any]:
+    return {
+        "module_name": entry.module_name,
+        "file_name": entry.file_name,
+        "relative_path": entry.relative_path,
+        "size_bytes": entry.size_bytes,
+        "sha256": entry.sha256,
+        "config": entry.config,
+    }

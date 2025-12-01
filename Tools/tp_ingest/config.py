@@ -23,6 +23,7 @@ class MongoSettings:
     port_results_collection: str
     flow_map_collection: str
     artifacts_collection: str
+    hvqk_collection: str
     tls: bool = True
 
     @classmethod
@@ -53,6 +54,7 @@ class MongoSettings:
         port_results_collection = os.environ.get("TPFD_MONGO_PORT_RESULTS_COLLECTION", "port_results")
         flow_map_collection = os.environ.get("TPFD_MONGO_FLOW_MAP_COLLECTION", "flow_map")
         artifacts_collection = os.environ.get("TPFD_MONGO_ARTIFACTS_COLLECTION", "artifacts")
+        hvqk_collection = os.environ.get("TPFD_MONGO_HVQK_COLLECTION", "hvqk_configs")
         tls = os.environ.get("TPFD_MONGO_TLS", "true").lower() in {"1", "true", "yes"}
         return cls(
             uri=uri,
@@ -69,6 +71,7 @@ class MongoSettings:
             port_results_collection=port_results_collection,
             flow_map_collection=flow_map_collection,
             artifacts_collection=artifacts_collection,
+            hvqk_collection=hvqk_collection,
             tls=tls,
         )
 

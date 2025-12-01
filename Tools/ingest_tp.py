@@ -6,9 +6,10 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from tp_ingest.config import IngestSettings
 from tp_ingest.parsers import (
@@ -52,6 +53,22 @@ GIT_INFO_CANDIDATES = (
     Path("Reports") / "GitReportInfo.txt",
 )
 
+HVQK_SUFFIX = ".hvqk.config.json"
+
+
+def _iter_hvqk_files(tp_dir: Path) -> Iterable[Tuple[str, Path]]:
+    modules_dir = tp_dir / "Modules"
+    if not modules_dir.exists():
+        return
+    module_dirs = sorted((p for p in modules_dir.iterdir() if p.is_dir()), key=lambda p: p.name.lower())
+    for module_dir in module_dirs:
+        input_dir = module_dir / "InputFiles"
+        if not input_dir.is_dir():
+            continue
+        for file_path in input_dir.rglob(f"*{HVQK_SUFFIX}"):
+            if file_path.is_file():
+                yield module_dir.name, file_path
+
 
 def collect_artifact_references(tp_dir: Path) -> List[models.ArtifactReference]:
     references: List[models.ArtifactReference] = []
@@ -88,7 +105,40 @@ def collect_artifact_references(tp_dir: Path) -> List[models.ArtifactReference]:
             if child.is_file():
                 _register(child, "report-extra")
 
+    for _module_name, hvqk_path in _iter_hvqk_files(tp_dir):
+        _register(hvqk_path, "hvqk-config")
+
     return references
+
+
+def collect_hvqk_configs(tp_dir: Path) -> List[models.HVQKConfigEntry]:
+    entries: List[models.HVQKConfigEntry] = []
+    for module_name, file_path in _iter_hvqk_files(tp_dir):
+        try:
+            raw_bytes = file_path.read_bytes()
+        except OSError:
+            continue
+        digest = hashlib.sha256(raw_bytes).hexdigest()
+        size = len(raw_bytes)
+        try:
+            text = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw_bytes.decode("utf-8", errors="ignore")
+        try:
+            config_payload: Dict[str, Any] = json.loads(text)
+        except json.JSONDecodeError as exc:
+            config_payload = {"__parse_error__": str(exc)}
+        entries.append(
+            models.HVQKConfigEntry(
+                module_name=module_name,
+                file_name=file_path.name,
+                relative_path=file_path.relative_to(tp_dir).as_posix(),
+                size_bytes=size,
+                sha256=digest,
+                config=config_payload,
+            )
+        )
+    return entries
 
 
 def build_tp_metadata(
@@ -196,6 +246,7 @@ def run_ingestion(
     flow_map_result = FlowMapParser().parse(flow_map_path)
     setpoints_result = SetpointsParser().parse(tp_dir / "Modules")
     artifacts = collect_artifact_references(tp_dir)
+    hvqk_configs = collect_hvqk_configs(tp_dir)
     metadata = build_tp_metadata(
         product=product_config,
         integration=integration,
@@ -228,6 +279,7 @@ def run_ingestion(
         "flow_map_entries_count": len(flow_map_result.entries),
         "setpoint_entries_count": len(setpoints_result.entries),
         "artifact_reference_count": len(artifacts),
+        "hvqk_config_count": len(hvqk_configs),
         "product": {
             "product_code": metadata.product_code,
             "product_name": metadata.product_name,
@@ -328,6 +380,12 @@ def run_ingestion(
             artifacts,
             product_code=product_code_value,
         )
+        hvqk_rows = writer.write_hvqk_configs(
+            tp_name,
+            resolved_git_hash,
+            hvqk_configs,
+            product_code=product_code_value,
+        )
         product_doc_id: Optional[str] = None
         if product_config:
             product_doc_id = writer.upsert_product_config(product_config)
@@ -344,10 +402,12 @@ def run_ingestion(
         payload["port_result_entries_persisted"] = port_rows
         payload["flow_map_entries_persisted"] = flow_map_rows
         payload["artifact_documents_persisted"] = artifact_rows
+        payload["hvqk_configs_persisted"] = hvqk_rows
         if product_doc_id:
             payload["product_doc_id"] = product_doc_id
     else:
         payload["mongo_doc_id"] = "skipped"
+        payload["hvqk_configs_persisted"] = 0
 
     return payload
 

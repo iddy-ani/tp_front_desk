@@ -255,6 +255,16 @@ class ArtifactReference:
 
 
 @dataclass
+class HVQKConfigEntry:
+    module_name: str
+    file_name: str
+    relative_path: str
+    size_bytes: int
+    config: Dict[str, Any]
+    sha256: Optional[str] = None
+
+
+@dataclass
 class TestProgramMetadata:
     product_code: Optional[str]
     product_name: Optional[str]

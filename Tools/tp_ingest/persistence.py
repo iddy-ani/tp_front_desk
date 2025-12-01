@@ -17,6 +17,7 @@ from .serialization import (
     artifact_reference_to_document,
     cake_audit_entry_to_document,
     flow_map_entry_to_document,
+    hvqk_config_entry_to_document,
     ingest_artifact_to_document,
     module_summary_entry_to_document,
     pas_record_to_document,
@@ -100,6 +101,7 @@ class MongoWriter(DatabaseWriter):
         port_results_collection: str = "port_results",
         flow_map_collection: str = "flow_map",
         artifacts_collection: str = "artifacts",
+        hvqk_collection: str = "hvqk_configs",
     ) -> None:
         self._client = _build_client(uri)
         self._collection = self._client[db_name][collection]
@@ -114,6 +116,7 @@ class MongoWriter(DatabaseWriter):
         self._port_results_collection = self._client[db_name][port_results_collection]
         self._flow_map_collection = self._client[db_name][flow_map_collection]
         self._artifacts_collection = self._client[db_name][artifacts_collection]
+        self._hvqk_collection = self._client[db_name][hvqk_collection]
         self._is_mock = mongomock is not None and isinstance(self._client, mongomock.MongoClient)
         self._ensure_indexes()
 
@@ -166,6 +169,14 @@ class MongoWriter(DatabaseWriter):
         self._artifacts_collection.create_index(
             [("tp_document_id", ASCENDING), ("category", ASCENDING)],
             name="artifacts_tp_category_idx",
+        )
+        self._hvqk_collection.create_index(
+            [("tp_document_id", ASCENDING), ("module_name", ASCENDING)],
+            name="hvqk_tp_module_idx",
+        )
+        self._hvqk_collection.create_index(
+            [("tp_document_id", ASCENDING), ("file_name", ASCENDING)],
+            name="hvqk_tp_file_idx",
         )
         self._plist_collection.create_index(
             [("tp_document_id", ASCENDING)], name="plist_tp_idx"
@@ -327,6 +338,32 @@ class MongoWriter(DatabaseWriter):
         self._artifacts_collection.delete_many({"tp_document_id": tp_document_id})
         if docs:
             self._artifacts_collection.insert_many(docs)
+        return len(docs)
+
+    def write_hvqk_configs(
+        self,
+        tp_name: str,
+        git_hash: str,
+        entries: Iterable[models.HVQKConfigEntry],
+        *,
+        product_code: Optional[str] = None,
+    ) -> int:
+        tp_document_id = f"{tp_name}:{git_hash}"
+        docs: List[Dict[str, Any]] = []
+        timestamp = datetime.now(timezone.utc)
+        for entry in entries:
+            doc = hvqk_config_entry_to_document(entry)
+            doc["tp_document_id"] = tp_document_id
+            doc["tp_name"] = tp_name
+            doc["git_hash"] = git_hash
+            if product_code:
+                doc["product_code"] = product_code
+            doc["ingested_at"] = timestamp
+            doc["_id"] = f"{tp_document_id}|hvqk:{_normalize_identifier(entry.relative_path)}"
+            docs.append(doc)
+        self._hvqk_collection.delete_many({"tp_document_id": tp_document_id})
+        if docs:
+            self._hvqk_collection.insert_many(docs)
         return len(docs)
 
     def write_test_instances(

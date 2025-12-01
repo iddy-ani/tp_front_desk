@@ -46,6 +46,7 @@ FLOW_MAP_COLLECTION = "flow_map"
 SETPOINTS_COLLECTION = "setpoints"
 ARTIFACTS_COLLECTION = "artifacts"
 PRODUCT_COLLECTION = "product_configs"
+HVQK_COLLECTION = "hvqk_configs"
 
 
 # Reusable status emitter so Open WebUI can stream progress updates
@@ -110,8 +111,18 @@ class QuestionClassifier:
     def classify(cls, question: str) -> str:
         normalized = question.lower().strip()
         for label, keywords in cls.MAPPINGS:
-            if any(keyword in normalized for keyword in keywords):
-                return label
+            for keyword in keywords:
+                cleaned = keyword.strip().lower()
+                if not cleaned:
+                    continue
+                parts = [part for part in cleaned.split() if part]
+                if len(parts) > 1:
+                    pattern_body = r"\s+".join(re.escape(part) for part in parts)
+                else:
+                    pattern_body = re.escape(cleaned)
+                pattern = rf"(?<![a-z0-9]){pattern_body}(?![a-z0-9])"
+                if re.search(pattern, normalized):
+                    return label
         return "fallback"
 
 
@@ -632,6 +643,104 @@ class Tools:
             summary[row["_id"] or "unknown"] = row["count"]
         return summary
 
+    def _fetch_hvqk_module_inventory(
+        self,
+        hvqk_collection: MongoCollection,
+        ctx: TPContext,
+    ) -> List[dict]:
+        pipeline = [
+            {"$match": {"tp_document_id": ctx.tp_document_id}},
+            {"$group": {"_id": "$module_name", "files": {"$addToSet": "$file_name"}, "count": {"$sum": 1}}},
+            {"$sort": {"_id": 1}},
+        ]
+        modules: List[dict] = []
+        for row in hvqk_collection.aggregate(pipeline):
+            module = row.get("_id")
+            if not module:
+                continue
+            files = sorted(file for file in row.get("files", []) if file)
+            modules.append({"module": module, "files": files, "count": row.get("count", len(files))})
+        return modules
+
+    @staticmethod
+    def _stringify_config_value(value: Any, *, max_length: int = 320) -> str:
+        if value is None:
+            return "n/a"
+        if isinstance(value, (int, float)):
+            text = str(value)
+        elif isinstance(value, str):
+            text = value
+        else:
+            try:
+                text = json.dumps(value)
+            except TypeError:
+                text = str(value)
+        if len(text) > max_length:
+            text = text[: max_length - 3] + "..."
+        return text
+
+    def _format_hvqk_listing(self, modules: List[dict]) -> str:
+        if not modules:
+            return "I did not find HVQK configs for this TP."
+        lines = ["💧 HVQK waterfall configs by module:"]
+        preview_limit = 12
+        for entry in modules:
+            module = entry.get("module", "unknown")
+            files = entry.get("files", [])
+            lines.append(f"- {module} ({len(files)} files):")
+            for name in files[:preview_limit]:
+                lines.append(f"    - {name}")
+            remaining = len(files) - preview_limit
+            if remaining > 0:
+                lines.append(f"    - … and {remaining} more")
+        return "\n".join(lines)
+
+    def _fetch_hvqk_configs(
+        self,
+        hvqk_collection: MongoCollection,
+        ctx: TPContext,
+        module_name: Optional[str] = None,
+    ) -> List[dict]:
+        filters: Dict[str, Any] = {"tp_document_id": ctx.tp_document_id}
+        if module_name:
+            filters["module_name"] = module_name
+        cursor = hvqk_collection.find(filters).sort("file_name", 1)
+        return list(cursor)
+
+    def _format_hvqk_module_detail(self, module_name: str, entries: List[dict]) -> str:
+        if not entries:
+            return f"No HVQK configs recorded for {module_name}."
+        label_parts = module_name.split("_", 1)
+        canonical_label = f"{label_parts[0]}::{label_parts[1]}" if len(label_parts) == 2 else module_name
+        lines = [
+            f"🧾 HVQK configs for {module_name} ({len(entries)} files)",
+            f"HVQK coverage for {module_name}",
+            f"Module {canonical_label} HVQK assets",
+        ]
+
+        for entry in entries:
+            file_name = entry.get("file_name", "unknown")
+            config = entry.get("config") or {}
+            lines.append(f"{file_name}")
+            lines.append("| Key | Value |")
+            lines.append("| --- | --- |")
+
+            def _add_row(key: str, value: Any) -> None:
+                lines.append(f"| {key} | {self._stringify_config_value(value)} |")
+
+            _add_row("DomainName", config.get("DomainName"))
+            _add_row("InstanceName", config.get("InstanceName"))
+            _add_row("VoltageStart", config.get("VoltageStart"))
+            _add_row("VoltageStop", config.get("VoltageStop"))
+            _add_row("Pin", config.get("Pin"))
+            _add_row("VoltageSteps", config.get("VoltageSteps"))
+            _add_row("RelativePath", entry.get("relative_path"))
+            _add_row("SizeBytes", entry.get("size_bytes"))
+            _add_row("SHA256", entry.get("sha256"))
+            lines.append("")
+
+        return "\n".join(lines).strip()
+
     def _summarize_hvqk_modules(
         self,
         test_collection: MongoCollection | Mapping[str, Any] | None,
@@ -854,6 +963,7 @@ class Tools:
         port_collection = self._get_collection(client, PORT_RESULTS_COLLECTION)
         setpoints_collection = self._get_collection(client, SETPOINTS_COLLECTION)
         artifacts_collection = self._get_collection(client, ARTIFACTS_COLLECTION)
+        hvqk_collection = self._get_collection(client, HVQK_COLLECTION)
 
         modules_catalog = self._list_module_names(module_collection, ctx)
         flows_catalog = self._list_subflows(test_collection, ctx)
@@ -888,25 +998,17 @@ class Tools:
                 )
                 hvqk_summary = self._summarize_hvqk_modules(test_collection, ctx)
                 answer_lines.append(self._format_hvqk_summary(hvqk_summary))
+                hvqk_modules = self._fetch_hvqk_module_inventory(hvqk_collection, ctx)
+                answer_lines.append(self._format_hvqk_listing(hvqk_modules))
 
             elif classification == "hvqk_module_detail":
-                filters: Dict[str, Any] = {"subflow": {"$regex": "HVQK", "$options": "i"}}
-                module_filters, module_label = self._module_filters(module_match)
-                filters.update(module_filters)
-                rows = self._fetch_test_rows(
-                    test_collection,
+                module_name = module_match or "requested module"
+                hvqk_entries = self._fetch_hvqk_configs(
+                    hvqk_collection,
                     ctx,
-                    filters,
-                    limit=self.valves.max_test_instance_rows,
+                    module_name=module_match,
                 )
-                title = module_label or "HVQK modules"
-                answer_lines.append(
-                    self._format_detailed_tests(
-                        rows,
-                        title=f"HVQK coverage for {title}",
-                        limit=self.valves.max_test_instance_rows,
-                    )
-                )
+                answer_lines.append(self._format_hvqk_module_detail(module_name, hvqk_entries))
 
             elif classification == "tp_snapshot":
                 modules = self._fetch_module_summary(module_collection, ctx)
