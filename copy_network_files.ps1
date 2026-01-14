@@ -7,14 +7,16 @@ param(
     [string]$DestinationPath = "Test Programs"
 )
 
-# Get the script's directory (working directory)
+# Resolve destination path.
+# - If DestinationPath is absolute, use it directly.
+# - Otherwise, treat it as relative to the script directory.
 $WorkingDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-if (-not $WorkingDir) {
-    $WorkingDir = Get-Location
-}
+if (-not $WorkingDir) { $WorkingDir = (Get-Location).Path }
 
-# Create full destination path
-$FullDestination = Join-Path -Path $WorkingDir -ChildPath $DestinationPath
+$FullDestination = $DestinationPath
+if (-not [System.IO.Path]::IsPathRooted($DestinationPath)) {
+    $FullDestination = Join-Path -Path $WorkingDir -ChildPath $DestinationPath
+}
 
 Write-Host "Source: $SourcePath" -ForegroundColor Cyan
 Write-Host "Destination: $FullDestination" -ForegroundColor Cyan
@@ -35,53 +37,83 @@ if (-not (Test-Path -Path $FullDestination)) {
 
 # Start timing
 $StartTime = Get-Date
-Write-Host "Starting copy operation..." -ForegroundColor Green
+Write-Host "Starting copy operation (ingestion artifacts only)..." -ForegroundColor Green
 
 try {
-    # Use Robocopy for efficient, multi-threaded copying
-    # /E = Copy subdirectories, including empty ones
-    # /MT:16 = Multi-threaded (16 threads for speed)
-    # /R:2 = Retry 2 times on failed copies
-    # /W:5 = Wait 5 seconds between retries
-    # /NP = No progress percentage (cleaner output)
-    # /NDL = No directory list (cleaner output)
-    # /NFL = No file list (cleaner output, remove this if you want to see each file)
-    # /LOG = Optional: create a log file
-    
-    $RobocopyArgs = @(
-        "`"$SourcePath`"",
-        "`"$FullDestination`"",
-        "*.*",
-        "/E",
+    # We only need a small subset of the TP for ingestion:
+    # - Reports (csv/txt)
+    # - Root metadata files (BaseLevels/BaseSpecs/EnvironmentFile)
+    # - Module templates (*.mtpl) for SetPoints parsing
+    # - HVQK config JSONs (*.hvqk.config.json)
+    # Copying the entire TP (patterns, binaries, etc.) is unnecessarily expensive.
+
+    $CommonArgs = @(
         "/MT:16",
         "/R:2",
         "/W:5",
-        "/NP"
+        "/NP",
+        "/NDL",
+        "/NFL"
     )
-    
-    Write-Host "Using Robocopy with 16 threads for optimal speed..." -ForegroundColor Yellow
-    
-    $Result = Start-Process -FilePath "robocopy" -ArgumentList $RobocopyArgs -Wait -PassThru -NoNewWindow
-    
-    # Robocopy exit codes: 0-7 are success (0-3 = no errors, 4-7 = some files not copied but not critical)
-    if ($Result.ExitCode -le 7) {
+
+    function Invoke-Robocopy {
+        param(
+            [Parameter(Mandatory=$true)][string]$Src,
+            [Parameter(Mandatory=$true)][string]$Dst,
+            [Parameter(Mandatory=$true)][string[]]$Files,
+            [Parameter(Mandatory=$false)][string[]]$ExtraArgs = @()
+        )
+
+        if (-not (Test-Path -Path $Src)) {
+            return 0
+        }
+        if (-not (Test-Path -Path $Dst)) {
+            New-Item -Path $Dst -ItemType Directory -Force | Out-Null
+        }
+
+        & robocopy $Src $Dst @Files @ExtraArgs @CommonArgs | Out-Null
+        return $LASTEXITCODE
+    }
+
+    $ExitCodes = @()
+
+    Write-Host "Copying Reports/..." -ForegroundColor Yellow
+    $ReportsSrc = Join-Path -Path $SourcePath -ChildPath "Reports"
+    $ReportsDst = Join-Path -Path $FullDestination -ChildPath "Reports"
+    $ExitCodes += Invoke-Robocopy -Src $ReportsSrc -Dst $ReportsDst -Files @("*.*") -ExtraArgs @("/E")
+
+    Write-Host "Copying root metadata files..." -ForegroundColor Yellow
+    $ExitCodes += Invoke-Robocopy -Src $SourcePath -Dst $FullDestination -Files @(
+        "BaseLevels.tcg",
+        "BaseSpecs.usrv",
+        "EnvironmentFile.env"
+    ) -ExtraArgs @()
+
+    Write-Host "Copying Modules/**/*.mtpl and HVQK configs..." -ForegroundColor Yellow
+    $ModulesSrc = Join-Path -Path $SourcePath -ChildPath "Modules"
+    $ModulesDst = Join-Path -Path $FullDestination -ChildPath "Modules"
+    $ExitCodes += Invoke-Robocopy -Src $ModulesSrc -Dst $ModulesDst -Files @(
+        "*.mtpl",
+        "*.hvqk.config.json"
+    ) -ExtraArgs @("/S")
+
+    $WorstExit = ($ExitCodes | Measure-Object -Maximum).Maximum
+
+    # Robocopy exit codes: 0-7 are success (0-3 = no errors, 4-7 = some files skipped but not critical)
+    if ($WorstExit -le 7) {
         $EndTime = Get-Date
         $Duration = $EndTime - $StartTime
-        
+
         Write-Host ""
         Write-Host "Copy completed successfully!" -ForegroundColor Green
         Write-Host "Time taken: $($Duration.ToString('mm\:ss'))" -ForegroundColor Cyan
         Write-Host "Files copied to: $FullDestination" -ForegroundColor Cyan
-        
-        # Get folder size
-        $Size = (Get-ChildItem -Path $FullDestination -Recurse -File | Measure-Object -Property Length -Sum).Sum
-        $SizeMB = [math]::Round($Size / 1MB, 2)
-        Write-Host "Total size: $SizeMB MB" -ForegroundColor Cyan
+        exit 0
     }
     else {
         Write-Host ""
-        Write-Host "WARNING: Copy completed with exit code $($Result.ExitCode)" -ForegroundColor Yellow
-        Write-Host "Some files may not have been copied. Check the destination folder." -ForegroundColor Yellow
+        Write-Host "ERROR: Copy completed with robocopy exit code $WorstExit" -ForegroundColor Red
+        exit 2
     }
 }
 catch {

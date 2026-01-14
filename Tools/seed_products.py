@@ -12,6 +12,26 @@ from tp_ingest.product_config import load_product_configs
 from ingest_tp import run_ingestion
 
 
+def _sorted_network_tp_names(network_path: str, *, max_network_scan: Optional[int] = None) -> List[str]:
+    if not network_path:
+        return []
+    root = Path(network_path)
+    candidates: List[tuple[float, str]] = []
+    for child in root.iterdir():
+        if not child.is_dir():
+            continue
+        try:
+            mtime = child.stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        candidates.append((mtime, child.name))
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    names = [name for _, name in candidates]
+    if max_network_scan is not None:
+        names = names[:max_network_scan]
+    return names
+
+
 def _dedupe_preserve_order(items: Iterable[str]) -> List[str]:
     seen: set[str] = set()
     ordered: List[str] = []
@@ -68,6 +88,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Number of historical releases to ingest per product (0 skips history, -1 ingests all).",
     )
     parser.add_argument(
+        "--discover-from-network",
+        action="store_true",
+        help="Ignore ListOfReleases and discover TP folders by enumerating each product's NetworkPath.",
+    )
+    parser.add_argument(
+        "--max-network-scan",
+        type=int,
+        default=None,
+        help="Optional cap on how many TP folders to consider when discovering from the network path.",
+    )
+    parser.add_argument(
         "--skip-latest",
         action="store_true",
         help="Skip the latest TP per product and only process historical releases.",
@@ -104,7 +135,35 @@ def main() -> None:
         code_upper = (config.product_code or "").upper()
         if filter_codes and code_upper not in filter_codes:
             continue
-        tp_queue = _build_tp_queue(config, include_latest, history_depth)
+        if args.discover_from_network:
+            discovered = _sorted_network_tp_names(config.network_path, max_network_scan=args.max_network_scan)
+            if not discovered:
+                results.append(
+                    {
+                        "product_code": config.product_code,
+                        "product_name": config.product_name,
+                        "status": "skipped",
+                        "reason": "No TP folders discovered on network path",
+                        "network_path": config.network_path,
+                    }
+                )
+                continue
+
+            # Discovered list is newest-first.
+            latest = discovered[0]
+            history = discovered[1:]
+            if history_depth == 0:
+                history = []
+            elif history_depth > 0:
+                history = history[:history_depth]
+
+            queue: List[str] = []
+            if include_latest and latest:
+                queue.append(latest)
+            queue.extend(history)
+            tp_queue = _dedupe_preserve_order(queue)
+        else:
+            tp_queue = _build_tp_queue(config, include_latest, history_depth)
         if not tp_queue:
             results.append(
                 {

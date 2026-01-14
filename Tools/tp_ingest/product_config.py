@@ -25,8 +25,14 @@ def load_product_configs(path: Path) -> List[models.ProductConfig]:
 
     text = path.read_text(encoding="utf-8")
     cleaned = _strip_json_comments(text)
-    cleaned = cleaned.replace("\\", "\\\\")
-    data = json.loads(cleaned)
+
+    # Products.json is expected to be valid JSON. Some legacy config files historically
+    # contained unescaped backslashes (e.g. Windows/UNC paths) which are not valid JSON.
+    # To support both, only apply the backslash-doubling workaround if the initial parse fails.
+    try:
+        data = json.loads(cleaned)
+    except json.JSONDecodeError:
+        data = json.loads(cleaned.replace("\\", "\\\\"))
     items: Iterable[dict]
     if isinstance(data, list):
         items = data

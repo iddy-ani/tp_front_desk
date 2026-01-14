@@ -422,5 +422,9 @@
         """,
         "Source":"Walking the Modules/ARR_ATOM/InputFiles folder in the Test Program (PTUSDJXA1H21G402546) to find HVQK waterfall files and extracting their contents",
         "Methodology": "Walking through the ARR_ATOM Module in the Modules folder for a test program, looking into the InputFiles folder to find files that end with .hvqk.config.json. Extracting the key configuration details from each of these files to provide a comprehensive overview of the ARR_ATOM HVQK waterfall flow in the test program."
-    }
+    },
+    "9":{
+        "Q9":"What program did X (patterns, Levels )  change last",
+        "Answer":"""The SCN_CORE ATSPEED tests in the test program PTUSDJXA1H21G402546 are as follows:
+        | InstanceName | STATUS | Bypass | Bins | Counters | LEVEL | TIMING | PLIST | MonitorPatCount | KILLPatCount | SkippedPatCount | Content Directory | PatternVREV | TestType | TpOptions | Scrum | ModuleName | ModuleUser | TestCategory | Partition | TestType.1 | TestTypeFlag | SubFlow | PatternRatio | VoltageDomain | Corner | Frequency | InstanceUser |
 }

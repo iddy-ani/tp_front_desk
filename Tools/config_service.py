@@ -28,12 +28,35 @@ def _strip_json_comments(raw_text: str) -> str:
 def _read_raw_payload(path: Path) -> Tuple[Any, bool]:
     text = path.read_text(encoding="utf-8")
     cleaned = _strip_json_comments(text)
-    cleaned = cleaned.replace("\\", "\\\\")
-    data = json.loads(cleaned)
+
+    # Products.json is expected to be valid JSON. Some legacy config files historically
+    # contained unescaped backslashes (e.g. Windows/UNC paths) which are not valid JSON.
+    # To support both, only apply the backslash-doubling workaround if the initial parse fails.
+    try:
+        data = json.loads(cleaned)
+    except json.JSONDecodeError:
+        data = json.loads(cleaned.replace("\\", "\\\\"))
     is_list = isinstance(data, list)
     if not is_list and not isinstance(data, dict):
         raise ValueError("Products.json must be an object or array")
     return data, is_list
+
+
+def _sorted_directories(network_path: Path) -> List[Path]:
+    candidates: List[tuple[float, Path]] = []
+    try:
+        for child in network_path.iterdir():
+            if not child.is_dir():
+                continue
+            try:
+                mtime = child.stat().st_mtime
+            except OSError:
+                mtime = 0.0
+            candidates.append((mtime, child))
+    except OSError as exc:
+        raise FileNotFoundError(f"Unable to enumerate {network_path}: {exc}") from exc
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return [entry for _, entry in candidates]
 
 
 def _config_to_payload(config: models.ProductConfig) -> Dict[str, Any]:
@@ -151,6 +174,54 @@ def sync_latest_from_state(
     return changes
 
 
+def sync_releases_from_network(
+    configs: List[models.ProductConfig],
+    *,
+    max_network_scan: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    changes: List[Dict[str, Any]] = []
+    for config in configs:
+        if not config.network_path:
+            continue
+        network_path = Path(config.network_path)
+        try:
+            directories = _sorted_directories(network_path)
+        except FileNotFoundError as exc:
+            changes.append(
+                {
+                    "product_code": (config.product_code or "").upper(),
+                    "status": "network-unavailable",
+                    "error": str(exc),
+                }
+            )
+            continue
+
+        if max_network_scan is not None:
+            directories = directories[:max_network_scan]
+        discovered = [directory.name for directory in directories]
+        if not discovered:
+            continue
+
+        previous_latest = config.latest_tp
+        previous_count = len(config.releases or [])
+
+        config.latest_tp = discovered[0]
+        config.releases = discovered
+        config.number_of_releases = len(discovered)
+
+        if previous_latest != config.latest_tp or previous_count != config.number_of_releases:
+            changes.append(
+                {
+                    "product_code": (config.product_code or "").upper(),
+                    "previous_latest": previous_latest,
+                    "new_latest": config.latest_tp,
+                    "previous_release_count": previous_count,
+                    "new_release_count": config.number_of_releases,
+                }
+            )
+    return changes
+
+
 def write_products_config(path: Path, configs: List[models.ProductConfig], original_is_list: bool) -> None:
     payload = [_config_to_payload(config) for config in configs]
     data: Any
@@ -194,6 +265,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Update LatestTP/ListOfReleases with the last ingested revision from state.",
     )
     parser.add_argument(
+        "--sync-releases-from-network",
+        action="store_true",
+        help="Populate LatestTP/NumberOfReleases/ListOfReleases by enumerating TP folders on each NetworkPath.",
+    )
+    parser.add_argument(
+        "--max-network-scan",
+        type=int,
+        default=None,
+        help="Optional cap on how many TP folders to include from the network path (sorted by mtime).",
+    )
+    parser.add_argument(
         "--apply",
         action="store_true",
         help="Persist modifications back to Products.json (otherwise dry run).",
@@ -233,8 +315,14 @@ def main() -> None:
     if args.sync_latest:
         changes = sync_latest_from_state(configs, state)
 
-    if args.sync_latest and changes:
-        logging.info("Detected %s product updates", len(changes))
+    network_changes: List[Dict[str, Any]] = []
+    if args.sync_releases_from_network:
+        network_changes = sync_releases_from_network(configs, max_network_scan=args.max_network_scan)
+
+    combined_changes = changes + network_changes
+
+    if (args.sync_latest or args.sync_releases_from_network) and combined_changes:
+        logging.info("Detected %s product updates", len(combined_changes))
         if args.apply:
             logging.info("Writing updates to %s", product_path)
             write_products_config(product_path, configs, is_list)
@@ -245,8 +333,8 @@ def main() -> None:
         "product_config": str(product_path),
         "state_file": str(state_path),
         "summary": summary,
-        "changes": changes,
-        "applied": bool(args.apply and changes),
+        "changes": combined_changes,
+        "applied": bool(args.apply and combined_changes),
     }
     if args.print_json:
         print(json.dumps(payload, indent=2))
