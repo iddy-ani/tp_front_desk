@@ -422,4 +422,108 @@
         """,
         "Source":"Walking the Modules/ARR_ATOM/InputFiles folder in the Test Program (PTUSDJXA1H21G402546) to find HVQK waterfall files and extracting their contents",
         "Methodology": "Walking through the ARR_ATOM Module in the Modules folder for a test program, looking into the InputFiles folder to find files that end with .hvqk.config.json. Extracting the key configuration details from each of these files to provide a comprehensive overview of the ARR_ATOM HVQK waterfall flow in the test program."
+    },
+    "9":{
+        "Q9":"What are the settings of the test class VminTC throughout the latest PantherLake CPU-U test program?",
+        "Answer":"""The test class VminTC is utilized throughout the latest PantherLake CPU-U test program PTUSDJXA1H21J412603 with various settings tailored to different tests. Here are some of the key settings for VminTC in this test program:
+            | InstanceName | STATUS | Bypass | Bins | Counters | LEVEL | TIMING | PLIST | MonitorPatCount | KILLPatCount | SkippedPatCount | Content Directory | PatternVREV | TestType | TpOptions | Scrum | ModuleName | ModuleUser | TestCategory | Partition | TestType2 | TestTypeFlag | SubFlow | PatternRatio | VoltageDomain | Corner | Frequency | InstanceUser |
+            | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+            | ARR_ATOM::SSA_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_SSA_INTM | Kill |  | 60710110\|60710112\|60710114\|60710115 | 60710110\|60710112\|60710114\|60710115 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_prepost_tito_atom_direct_ssa_intermediate_flat_lpc_list | 0 | 14 | 0 | MAarr | RevTP3UG0.0p26 | VminTC |  | ARR | ATOM |  | SSA | ATOMLPC | VMIN | K | PREHVQK | TITO | VCCATOM | MIN | LFM | 0800_SSA_INTM |
+            | ARR_ATOM::ALL_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_GALCOL | Bypassed | BypassedOnlyTPL | 20710030\|20710032\|20710034\|20710035 | 20710030\|20710032\|20710034\|20710035 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_prepost_tito_atom_lsa_flat_galcol_lpc_list | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | VminTC |  | ARR | ATOM |  | ALL | ATOMLPC | VMIN | K | PREHVQK | TITO | VCCATOM | MIN | LFM | 0800_LSA_GALCOL |
+            | ARR_ATOM::ALL_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_INTM | Kill |  | 20710027\|20710262\|20710264\|20710265 | 20710027\|20710262\|20710264\|20710265 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_prepost_tito_atom_lsa_intermediate_flat_lpc_list | 0 | 657 | 0 | MAarr | RevTP3UG0.0p26 | VminTC |  | ARR | ATOM |  | ALL | ATOMLPC | VMIN | K | PREHVQK | TITO | VCCATOM | MIN | LFM | 0800_LSA_INTM |
+            | ARR_ATOM::ROM_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_ROM_MS_PMOVI | Kill |  | 20710028\|20710029\|20710031\|20710033 | 20710028\|20710029\|20710031\|20710033 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_prepost_tito_atom_rom_ms_lpc_list | 0 | 2 | 0 | MAarr | RevTP3UG0.0p26 | VminTC |  | ARR | ATOM |  | ROM | ATOMLPC | VMIN | K | PREHVQK | TITO | VCCATOM | MIN | LFM | 0800_ROM_MS_PMOVI |
+            | ARR_ATOM::ALL_ATOMLPC_VMIN_K_SDTEND_TITO_VCCATOM_MIN_LFM_0800_LSA | Kill |  | 20730110\|20730112\|20730114\|20730115 | 20730110\|20730112\|20730114\|20730115 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_prepost_tito_atom_lsa_rom_pmovi_flat_lpc_list | 0 | 244 | 0 | MAarr | RevTP3UG0.0p26 | VminTC |  | ARR | ATOM |  | ALL | ATOMLPC | VMIN | K | SDTEND | TITO | VCCATOM | MIN | LFM | 0800_LSA |
+            | ARR_ATOM::SSA_ATOMLPC_VMIN_K_SDTEND_TITO_VCCATOM_MIN_LFM_0800_SSA | Kill |  | 60730040\|60730042\|60730044\|60730045 | 60730040\|60730042\|60730044\|60730045 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_prepost_tito_atom_direct_ssa_pmovi_flat_lpc_list | 0 | 4 | 0 | MAarr | RevTP3UG0.0p26 | VminTC |  | ARR | ATOM |  | SSA | ATOMLPC | VMIN | K | SDTEND | TITO | VCCATOM | MIN | LFM | 0800_SSA |
+            | ARR_ATOM::ROM_ATOMLPC_VMIN_K_SDTEND_TITO_VCCATOM_MIN_LFM_0800_ROM_MS_PMOVI | Bypassed | BypassedOnlyTPL | 20710036\|20710037\|20710038\|20710039 | 20710036\|20710037\|20710038\|20710039 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_prepost_tito_atom_rom_ms_lpc_list | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | VminTC |  | ARR | ATOM |  | ROM | ATOMLPC | VMIN | K | SDTEND | TITO | VCCATOM | MIN | LFM | 0800_ROM_MS_PMOVI |
+            | ARR_ATOM::LSA_ATOMLPC_VMAX_K_SDTEND_TITO_VCCATOM_MAX_LFM_0800_LSA | Kill |  | 20170006\|20170001\|20170003\|20170013 | 20170006\|20170001\|20170003\|20170013 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_hvqk_tito_atom_lsa_lpc_list | 0 | 889 | 0 | MAarr | RevTP3UG0.0p26 | VminTC |  | ARR | ATOM |  | LSA | ATOMLPC | VMAX | K | SDTEND | TITO | VCCATOM | MAX | LFM | 0800_LSA |
+            | ARR_ATOM::ROM_ATOMLPC_VMAX_K_SDTEND_TITO_VCCATOM_MAX_LFM_0800_ROM | Float | BypassedOnlyTPL | 20170056\|20170072\|20170074\|20170057 | 20170056\|20170072\|20170074\|20170057 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_hvqk_tito_atom_rom_lpc_list | 0 | 0 | 0 | NOCONTENTDIRECTORY | NOVREV | VminTC |  | ARR | ATOM |  | ROM | ATOMLPC | VMAX | K | SDTEND | TITO | VCCATOM | MAX | LFM | 0800_ROM |
+            | ARR_ATOM::SSA_ATOMLPC_VMAX_K_SDTEND_TITO_VCCATOM_MAX_LFM_0800_SSA | Kill |  | 60170030\|60170032\|60170034\|60170035 | 60170030\|60170032\|60170034\|60170035 | BASE::SBF_ATOMHP_nom_lvl | BASE::cpu_ctf_timing_tclk100_hclk100_bclk400 | array_pbist_hvqk_tito_atom_ssa_lpc_list | 0 | 24 | 0 | MAarr | RevTP3UG0.0p26 | VminTC |  | ARR | ATOM |  | SSA | ATOMLPC | VMAX | K | SDTEND | TITO | VCCATOM | MAX | LFM | 0800_SSA |
+            .......""",
+        "Source":"PasReport from LatestTP in Products.json",
+        "Methodology": "Using the LatestTP value from Products.json, access the corresponding PasReport to extract all instances where the TestType is VminTC. Compile key columns such as InstanceName, STATUS, Bypass, Bins, Counters, LEVEL, TIMING, PLIST, MonitorPatCount, KILLPatCount, SkippedPatCount, Content Directory, PatternVREV, TestType, TpOptions, Scrum, ModuleName, ModuleUser, TestCategory, Partition, TestType.1, TestTypeFlag, SubFlow, PatternRatio, VoltageDomain, Corner, Frequency, and InstanceUser. Present this structured data to illustrate the various settings of the VminTC test class throughout the test program for PantherLake CPU-U.",
+    },
+    "10":{
+        "Q10":"Is PantherLake CPU-U running array repair",
+        "Answer":"""Yes, the PantherLake CPU-U test program PTUSDJXA1H21J412603 includes array repair tests. Array repair is a crucial aspect of memory testing, particularly for embedded memory arrays, as it helps identify and rectify faults that may occur during manufacturing or operation. The presence of array repair tests in the test program indicates that the testing process is designed to ensure the reliability and functionality of the memory arrays within the CPU-U. Here are the relevant tests related to array repair:
+            InstanceName
+            ARR_COMMON::XSA_NPU_FUSECONFIG_E_BEGIN_TITO_NPU_NOM_LFM_1900_REPAIR,
+            ARR_COMMON::ALL_CORE_FUSECONFIG_E_BEGIN_TITO_CR_NOM_LFM_0400_REPAIR,
+            ARR_COMMON::XSA_NPU_FUSECONFIG_E_BEGIN_TITO_NPU_MAX_TFM_X_REPAIR,
+            ARR_COMMON::ALL_CORE_FUSECONFIG_E_BEGIN_TITO_CR_MAX_TFM_X_REPAIR,
+            ARR_COMMON::XSA_NPU_FUSECONFIG_E_BEGIN_TITO_NPU_MAX_LFM_1900_REPAIR,
+            ARR_COMMON::ALL_CORE_FUSECONFIG_E_BEGIN_TITO_CR_MAX_LFM_0400_REPAIR,
+            ARR_COMMON::XSA_NPU_FUSECONFIG_E_BEGIN_TITO_NPU_MIN_LFM_1900_REPAIR,
+            ARR_COMMON::ALL_CORE_FUSECONFIG_E_BEGIN_TITO_CR_MIN_LFM_0400_REPAIR,
+            ARR_COMMON::XSA_COMMON_FUSECONFIG_E_PREHVQK_TITO_X_X_X_X_REPAIR,
+            ARR_COMMON::XSA_NPU_FUSECONFIG_E_SDTBEGIN_TITO_NPU_MAX_LFM_1900_REPAIR,
+            ARR_COMMON::ALL_CORE_FUSECONFIG_E_SDTBEGIN_TITO_CR_MAX_LFM_0400_REPAIR,
+            ARR_COMMON::XSA_NPU_FUSECONFIG_E_SDTBEGIN_TITO_NPU_MIN_LFM_1900_REPAIR,
+            ARR_COMMON::ALL_CORE_FUSECONFIG_E_SDTBEGIN_TITO_CR_MIN_LFM_0400_REPAIR,
+            ARR_COMMON::XSA_COMMON_FUSECONFIG_E_SDTEND_TITO_X_X_X_X_REPAIR""",,
+        "Source":"PasReport from LatestTP in Products.json",
+        "Methodology": "Using the LatestTP value from Products.json, access the corresponding PasReport. Filter the InstanceName column for entries that include 'REPAIR' but not 'REPAIR_RESET', filter Status for anything that is not Bypassed, filter TestType for PrimePatConfigTestMethod, filter TestType2 for FUSECONFIG, and compile a list of these tests to confirm the presence of array repair testing in the PantherLake CPU-U test program."
+    },
+    "11":{
+        "Q11":"Is PantherLake CPU-U running hot array repair",
+        "Answer":"""The PantherLake CPU-U test program PTUSDJXA1H21J412603 does not include hot array repair tests. Hot array repair is a specialized testing procedure that typically involves repairing memory arrays in the SDT flow where the temperature conditions are elevated to simulate real-world operating environments. This type of testing is crucial for ensuring the reliability and performance of memory arrays under thermal stress. Here are the relevant findings regarding hot array repair:
+            InstanceName
+            ARR_COMMON::XSA_NPU_FUSECONFIG_E_SDTBEGIN_TITO_NPU_MAX_LFM_1900_REPAIR
+            ARR_COMMON::ALL_CORE_FUSECONFIG_E_SDTBEGIN_TITO_CR_MAX_LFM_0400_REPAIR
+            ARR_COMMON::XSA_NPU_FUSECONFIG_E_SDTBEGIN_TITO_NPU_MIN_LFM_1900_REPAIR
+            ARR_COMMON::ALL_CORE_FUSECONFIG_E_SDTBEGIN_TITO_CR_MIN_LFM_0400_REPAIR
+            ARR_COMMON::XSA_COMMON_FUSECONFIG_E_SDTEND_TITO_X_X_X_X_REPAIR""",
+        "Source":"PasReport from LatestTP in Products.json",
+        "Methodology": "Using the LatestTP value from Products.json, access the corresponding PasReport. Filter the InstanceName column for entries that include 'REPAIR' but not 'REPAIR_RESET', filter Status for anything that is not Bypassed, filter TestType for PrimePatConfigTestMethod, filter TestType2 for FUSECONFIG, filter SubFlow to anything including SDT, and compile a list of these tests to confirm the presence of array repair testing in the PantherLake CPU-U test program.",
+    },
+    "12":{
+        "Q12":"Is there much content in the SDT flow of PantherLake CPU-U?",
+        "Answer":"""The SDT flow of the PantherLake CPU-U test program PTUSDJXA1H21J412603 contains a moderate amount of content. The SDT (Singulated Die Test) flow is designed to identify singulated die testing that is completed at hot temperature. This flow typically includes a variety of tests aimed at ensuring the functionality and reliability of the die under specific conditions. Here is a list of the tests included in the SDT flow:
+            InstanceName
+            ARR_ATOM::XSA_ATOMLPC_HRY_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_ALL_PRE_HRY_650MV
+            ARR_ATOM::SSA_ATOMLPC_CAPPKTS_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_DAT_650MV
+            ARR_ATOM::SSA_ATOMLPC_CAPPKTS_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_TAG_650MV
+            ARR_ATOM::SSA_ATOMLPC_REPAIR_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_DAT_REPAIR_650MV
+            ARR_ATOM::SSA_ATOMLPC_REPAIR_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_DAT_REPAIR_TO_FUSE_650MV
+            ARR_ATOM::SSA_ATOMLPC_REPAIR_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_TAG_REPAIR_650MV
+            ARR_ATOM::SSA_ATOMLPC_REPAIR_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_TAG_REPAIR_TO_FUSE_650MV
+            ARR_ATOM::LSA_ATOMLPC_CAPPKTS_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_C6S_700MV
+            ARR_ATOM::LSA_ATOMLPC_CAPPKTS_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_STATE_700MV
+            ARR_ATOM::LSA_ATOMLPC_CAPPKTS_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_LRU_700MV
+            ARR_ATOM::LSA_ATOMLPC_REPAIR_E_SDTBEGIN_TITO_VCCATOM_MIN_LFM_0800_L2_C6S_REPAIR_700MV
+            ARR_ATOM::ALL_ATOMLPC_SHMOO_E_SDTEND_TITO_ATOM_MAX_LFM_0800_LSA_ROM_LP
+            ARR_ATOM::SSA_ATOMLPC_SHMOO_E_SDTEND_TITO_VCCATOM_MAX_LFM_0800_SSA_LP
+            ARR_ATOM::ROM_ATOMLPC_SHMOO_E_SDTEND_TITO_VCCATOM_MAX_LFM_0800_ROM_LP
+            ARR_CCF::ROM_CCF_VMIN_K_SDTEND_TITO_VCCSA_MIN_LFM_0800_SBO
+            ARR_CCF::ROM_CCF_VMIN_K_SDTEND_TITO_VCCSA_MIN_LFM_0800_PMA0
+            ARR_CCF::ROM_CCF_VMIN_K_SDTEND_TITO_VCCSA_MIN_LFM_0800_PMA1
+            ARR_CCF::XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL
+            ARR_CCF::ALL_CCF_PATMOD_E_SDTEND_X_X_X_X_NBL_DISABLE
+            ARR_CCF::ALL_CCF_PATMOD_E_SDTEND_X_X_X_X_NBL_ENABLE
+            ARR_CCF::CTRL_X_VMIN_K_SDTEND_X_X_X_X_ARR_CCF_LS_PRED
+            ARR_CCF::CTRL_X_VMIN_K_SDTEND_X_X_X_X_ARR_CCF_LS_OS_PRED
+            ARR_CCF::SSA_CCF_VMIN_K_SDTENDTFM_TITO_VCCIA_MIN_TFM_4000_CBO_SUPERSET
+            ARR_CCF::LSA_CCF_VMIN_K_SDTENDTFM_TITO_VCCIA_MIN_TFM_4000_CBO_SUPERSET
+            ARR_CCF::XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL_SUPERSET
+            ARR_CCF::ALL_CCF_PATMOD_K_SDTENDTFM_X_X_X_X_NBL_DISABLE
+            ARR_CCF::ALL_CCF_PATMOD_K_SDTENDTFM_X_X_X_X_NBL_ENABLE
+            ARR_CCF::XSA_CCF_VMAX_K_SDTENDTFM_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL_SUPERSET
+            ARR_COMMON::SSA_CCF_HRY_E_SDTBEGIN_TITO_CLRS_MAX_LFM_0800_CBO0_LLC_DAT_BHRY_PMA0_BP0
+            ARR_COMMON::SSA_CCF_HRY_E_SDTBEGIN_TITO_CLRS_MAX_LFM_0800_CBO0_LLC_DAT_BISR_PMA0_BP0
+            ARR_COMMON::ALL_CCF_AUX_K_SDTBEGIN_X_X_MAX_LFM_0800_CBO0_LLC_DAT_BISR_PMA0_BP0
+            ARR_COMMON::SSA_CCF_HRY_E_SDTBEGIN_TITO_CLRS_MAX_LFM_0800_CBO0_LLC_TAG_BHRY_PMA0_BP2
+            ARR_COMMON::SSA_CCF_HRY_E_SDTBEGIN_TITO_CLRS_MAX_LFM_0800_CBO0_LLC_TAG_BISR_PMA0_BP2
+            ARR_COMMON::ALL_CCF_AUX_K_SDTBEGIN_X_X_MAX_LFM_0800_CBO0_LLC_TAG_BISR_PMA0_BP2
+            ARR_COMMON::SSA_CCF_HRY_E_SDTBEGIN_TITO_SAN_MAX_LFM_0800_CBO0_SAR_BHRY_PMA0_BP6
+            ARR_COMMON::SSA_CCF_HRY_E_SDTBEGIN_TITO_SAN_MAX_LFM_0800_CBO0_SAR_BISR_PMA0_BP6
+            ARR_COMMON::ALL_CCF_AUX_K_SDTBEGIN_X_X_MAX_LFM_0800_CBO0_SAR_BISR_PMA0_BP6
+            ARR_COMMON::LSA_CCF_HRY_E_SDTBEGIN_TITO_CLR_MAX_LFM_0800_CBO0_LSA_ALL_BHRY_PMA0_BP4
+            ARR_COMMON::LSA_CCF_HRY_E_SDTBEGIN_TITO_CLR_MAX_LFM_0800_CBO0_LSA_ALL_BISR_PMA0_BP4
+            ARR_COMMON::ALL_CCF_AUX_K_SDTBEGIN_X_X_MAX_LFM_0800_CBO0_LSA_ALL_BISR_PMA0_BP4
+            ARR_COMMON::SSA_CCF_HRY_E_SDTBEGIN_TITO_CLRS_MAX_LFM_0800_CBO1_LLC_DAT_BHRY_PMA0_BP1
+            ARR_COMMON::SSA_CCF_HRY_E_SDTBEGIN_TITO_CLRS_MAX_LFM_0800_CBO1_LLC_DAT_BISR_PMA0_BP1
+            ARR_COMMON::ALL_CCF_AUX_K_SDTBEGIN_X_X_MAX_LFM_0800_CBO1_LLC_DAT_BISR_PMA0_BP1
+            ARR_COMMON::SSA_CCF_HRY_E_SDTBEGIN_TITO_CLRS_MAX_LFM_0800_CBO1_LLC_TAG_BHRY_PMA0_BP3
+            ........""",
+        "Source":"PasReport from LatestTP in Products.json",
+        "Methodology": "Using the LatestTP value from Products.json, access the corresponding PasReport. Filter the SubFlow column for entries that include 'SDT' to identify all tests that are part of the SDT flow. Compile a list of these tests (InstanceName) to assess the amount of content present in the SDT flow of the PantherLake CPU-U test program."
     }

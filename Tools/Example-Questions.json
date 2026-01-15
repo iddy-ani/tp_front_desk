@@ -4,9 +4,9 @@
     "Q3":{"Question":"Does PTUSDJXA1H21G402546 have a HVQK water fall flow","Status":"Answered"},
     "Q4":{"Question":"What does it look like","Status":"Answered"},
     "Q5":{"Question":"Does PTUSDJXA1H21G402546 have VCC continuity in the flow and where","Status":"Answered"},
-    "Q7":{"Question":"What are the settings of the test class VminTC throughout the flow","Status":""},
-    "Q8":{"Question":"Is PantherLake CPU-U running array repair","Status":""},
-    "Q9":{"Question":"Is it doing hot repair","Status":""},
-    "Q10":{"Question":"Is there much content in the SDT flow","Status":""},
+    "Q7":{"Question":"What are the settings of the test class VminTC throughout the flow","Status":"Exampled"},
+    "Q8":{"Question":"Is PantherLake CPU-U running array repair","Status":"Exampled"},
+    "Q9":{"Question":"Is it doing hot repair","Status":"Exampled"},
+    "Q10":{"Question":"Is there much content in the SDT flow","Status":"Exampled"},
     "Q11":{"Question":"What program did X (patterns, Levels )  change last","Status":""}
 }
