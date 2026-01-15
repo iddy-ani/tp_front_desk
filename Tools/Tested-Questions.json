@@ -176,6 +176,24 @@
             ],
             "key_fields_returned": ["instance_name", "status", "subflow", "module_name", "test_type", "test_type_detail", "level", "timing", "plist"],
             "canonical_tokens": ["ARR_COMMON", "FUSECONFIG", "REPAIR", "PrimePatConfigTestMethod", "BEGIN", "PREHVQK", "SDTBEGIN", "SDTEND"]
+        },
+        "Q11": {
+            "question": "Is PantherLake CPU-U running hot array repair",
+            "classification": "hot_repair",
+            "tool_method": "_fetch_test_rows with multi-field filter including subflow SDT, post-filter for REPAIR_RESET exclusion, _format_detailed_tests",
+            "data_sources": ["test_instances filtered by instance_name, status, test_type, test_type_detail, subflow containing SDT"],
+            "mongo_collections": ["test_instances", "product_configs"],
+            "query_logic": [
+                "1. Classify question as 'hot_repair' via QuestionClassifier (triggers on 'hot array repair', 'hot repair', 'hot-repair')",
+                "2. Resolve TPContext: since no tp_name provided, look up latest_tp from product_configs for the matched product_code",
+                "3. Build compound filter: {instance_name: {$regex: 'REPAIR'}, status: {$ne: 'Bypassed'}, test_type: 'PrimePatConfigTestMethod', test_type_detail: 'FUSECONFIG', subflow: {$regex: 'SDT'}}",
+                "4. Query test_instances with tp_document_id + filters",
+                "5. Post-filter to exclude any instance_name containing 'REPAIR_RESET'",
+                "6. If rows found: format as '🔥 Yes, hot array repair is present with N test(s) in SDT flow' + detailed list",
+                "7. If no rows: format as '❌ No hot array repair tests found matching the criteria'"
+            ],
+            "key_fields_returned": ["instance_name", "status", "subflow", "module_name", "test_type", "test_type_detail", "level", "timing", "plist"],
+            "canonical_tokens": ["ARR_COMMON", "FUSECONFIG", "REPAIR", "PrimePatConfigTestMethod", "SDTBEGIN", "SDTEND"]
         }
     },
     "collection_schema_notes": {
@@ -213,8 +231,8 @@
         "vcc_continuity": ["vcc continuity", "continuity"],
         "test_class_filter": ["vmintc", "test class", "settings of the test class"],
         "setpoints": ["settings", "setpoint"],
+        "hot_repair": ["hot array repair", "hot repair", "hot-repair", "hotrepair"],
         "array_repair": ["array repair", "running array", "repair flows"],
-        "hot_repair": ["hot repair", "hot-repair", "hotrepair"],
         "sdt_flow": ["sdt flow", "sdt content"]
     }
 }

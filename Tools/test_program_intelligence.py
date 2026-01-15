@@ -117,8 +117,9 @@ class QuestionClassifier:
         ("vcc_continuity", ("vcc continuity", "continuity")),
         ("test_class_filter", ("vmintc", "test class", "settings of the test class")),
         ("setpoints", ("settings", "setpoint")),
+        # hot_repair must come BEFORE array_repair so "hot array repair" matches correctly
+        ("hot_repair", ("hot array repair", "hot repair", "hot-repair", "hotrepair")),
         ("array_repair", ("array repair", "running array", "repair flows")),
-        ("hot_repair", ("hot repair", "hot-repair", "hotrepair")),
         ("sdt_flow", ("sdt flow", "sdt content")),
     ]
 
@@ -480,6 +481,28 @@ class Tools:
         if product_code and not self._looks_like_product_code(product_code):
             product_name_hint = product_name_hint or product_code
             product_code = ""
+
+        # If no explicit tp_name provided, look up LatestTP from product_configs
+        # This ensures questions about a product (without specifying a revision) use the configured LatestTP
+        if not tp_name:
+            # Try to get the LatestTP from product_configs
+            product_filter: Dict[str, Any] = {}
+            if product_code:
+                product_filter["product_code"] = product_code
+            elif product_name_hint:
+                product_filter["product_name"] = {"$regex": product_name_hint, "$options": "i"}
+            else:
+                # Try fuzzy match on question
+                fuzzy_match = self._infer_product_from_question(product_collection, question)
+                if fuzzy_match:
+                    product_filter["product_code"] = fuzzy_match.get("product_code")
+            if product_filter:
+                product_doc = product_collection.find_one(product_filter)
+                if product_doc and product_doc.get("latest_tp"):
+                    tp_name = product_doc["latest_tp"]
+                    if not product_code:
+                        product_code = product_doc.get("product_code", "")
+
         if tp_name:
             conditions.append({"tp_name": tp_name.strip()})
         if product_code:
@@ -1302,24 +1325,44 @@ class Tools:
                     )
 
             elif classification == "hot_repair":
-                tests = self._sample_test_instances(test_collection, ctx)
-                hot = [
-                    row
-                    for row in tests
-                    if "hot" in (row.get("instance_name") or "").lower()
-                    or "hot" in (row.get("module_name") or "").lower()
+                # Q11: Hot array repair = array repair tests in SDT subflows
+                # Same filters as array_repair PLUS subflow contains 'SDT'
+                filters: Dict[str, Any] = {
+                    "instance_name": {
+                        "$regex": "REPAIR",
+                        "$options": "i",
+                    },
+                    "status": {"$ne": "Bypassed"},
+                    "test_type": {"$regex": "^PrimePatConfigTestMethod$", "$options": "i"},
+                    "test_type_detail": {"$regex": "^FUSECONFIG$", "$options": "i"},
+                    "subflow": {"$regex": "SDT", "$options": "i"},
+                }
+                rows = self._fetch_test_rows(
+                    test_collection,
+                    ctx,
+                    extra_filters=filters,
+                    limit=self.valves.max_test_instance_rows,
+                )
+                # Filter out REPAIR_RESET in post-processing
+                rows = [
+                    r for r in rows
+                    if "repair_reset" not in (r.get("instance_name") or "").lower()
                 ]
-                if hot:
+                if rows:
                     answer_lines.append(
-                        "🔥 Hot repair instances: "
-                        + ", ".join(
-                            f"{row.get('module_name')}::{row.get('instance_name')}"
-                            for row in hot[:6]
+                        f"🔥 Yes, hot array repair is present with {len(rows)} test(s) in SDT flow:"
+                    )
+                    answer_lines.append(
+                        self._format_detailed_tests(
+                            rows,
+                            title="Hot array repair instances (SDT + FUSECONFIG)",
+                            limit=self.valves.max_test_instance_rows,
                         )
                     )
                 else:
                     answer_lines.append(
-                        "No hot repair instances detected in the sampled PAS data."
+                        "❌ No hot array repair tests found matching the criteria "
+                        "(REPAIR in name, not Bypassed, PrimePatConfigTestMethod, FUSECONFIG, SubFlow contains SDT)."
                     )
 
             elif classification == "sdt_flow":
