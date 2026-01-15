@@ -6,6 +6,7 @@ license: MIT
 description: Answer common PDE questions about HDMT test programs by reading the normalized Mongo collections.
 requirements: pymongo>=4.6.0
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -15,12 +16,23 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple, TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+)
 
 from pymongo import MongoClient
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection as MongoCollection
+
     MongoClientType = MongoClient
 else:  # pragma: no cover - runtime alias to avoid Pydantic schema generation on PyMongo types
     MongoCollection = Any
@@ -59,7 +71,9 @@ class EventEmitter:
     def __init__(self, event_emitter: Optional[Callable[[dict], Any]] = None):
         self._event_emitter = event_emitter
 
-    async def emit(self, description: str, status: str = "in_progress", done: bool = False):
+    async def emit(
+        self, description: str, status: str = "in_progress", done: bool = False
+    ):
         if self._event_emitter:
             await self._event_emitter(
                 {
@@ -101,7 +115,8 @@ class QuestionClassifier:
         ("atspeed_detail", ("atspeed",)),
         ("tp_snapshot", ("what does it look like", "overview", "snapshot")),
         ("vcc_continuity", ("vcc continuity", "continuity")),
-        ("setpoints", ("vMintc", "settings", "test class")),
+        ("test_class_filter", ("vmintc", "test class", "settings of the test class")),
+        ("setpoints", ("settings", "setpoint")),
         ("array_repair", ("array repair", "running array", "repair flows")),
         ("hot_repair", ("hot repair", "hot-repair", "hotrepair")),
         ("sdt_flow", ("sdt flow", "sdt content")),
@@ -152,9 +167,12 @@ class Tools:
     class UserValves(BaseModel):
         mongo_database: str = Field(default="", description="Override database name")
         product_code: str = Field(
-            default="", description="Preferred product code if not provided in the prompt"
+            default="",
+            description="Preferred product code if not provided in the prompt",
         )
-        tp_name: str = Field(default="", description="Preferred TP name if not provided")
+        tp_name: str = Field(
+            default="", description="Preferred TP name if not provided"
+        )
 
     class ContextResolutionError(Exception):
         def __init__(self, message: str, suggestions: Optional[List[str]] = None):
@@ -172,7 +190,9 @@ class Tools:
 
     @staticmethod
     def _tokenize(value: str) -> List[str]:
-        return [token for token in re.split(r"[^A-Z0-9]+", (value or "").upper()) if token]
+        return [
+            token for token in re.split(r"[^A-Z0-9]+", (value or "").upper()) if token
+        ]
 
     @staticmethod
     def _looks_like_product_code(value: str) -> bool:
@@ -207,7 +227,9 @@ class Tools:
         return re.findall(r"[A-Z0-9]{4,}", (text or "").upper())
 
     def _extract_tp_name_hint(self, question: str) -> Optional[str]:
-        for token in sorted(self._scan_identifier_tokens(question), key=len, reverse=True):
+        for token in sorted(
+            self._scan_identifier_tokens(question), key=len, reverse=True
+        ):
             if self._looks_like_tp_name(token):
                 return token
         return None
@@ -216,6 +238,34 @@ class Tools:
         for token in self._scan_identifier_tokens(question):
             if self._looks_like_product_code(token):
                 return token
+        return None
+
+    # Known test class names for extraction
+    KNOWN_TEST_CLASSES: Tuple[str, ...] = (
+        "VminTC",
+        "PrimePatConfigTestMethod",
+        "DcTestMethod",
+        "FunctionalTest",
+        "IdsTestMethod",
+        "ArrayTestMethod",
+        "ScanTestMethod",
+        "PlistExecuteTest",
+    )
+
+    def _extract_test_class_from_question(self, question: str) -> Optional[str]:
+        """Extract a test class name like 'VminTC' from the question text."""
+        normalized = question.lower()
+        for tc in self.KNOWN_TEST_CLASSES:
+            if tc.lower() in normalized:
+                return tc
+        # Fallback: look for pattern like "test class <Name>" or "TestType <Name>"
+        match = re.search(
+            r"(?:test\s*class|testtype)\s+([A-Za-z][A-Za-z0-9]*(?:TC|Method|Test)?)",
+            question,
+            re.IGNORECASE,
+        )
+        if match:
+            return match.group(1)
         return None
 
     def _normalize_identifiers(
@@ -242,13 +292,17 @@ class Tools:
                 normalized_product = candidate
 
         if normalized_product:
-            existing = product_collection.find_one({"product_code": normalized_product}, {"_id": 1})
+            existing = product_collection.find_one(
+                {"product_code": normalized_product}, {"_id": 1}
+            )
             if not existing:
                 normalized_product = ""
 
         return normalized_product, normalized_tp
 
-    def _match_catalog_token(self, question: str, catalog: Iterable[str]) -> Optional[str]:
+    def _match_catalog_token(
+        self, question: str, catalog: Iterable[str]
+    ) -> Optional[str]:
         normalized_question = self._normalize_token(question)
         for entry in catalog:
             token = self._normalize_token(entry)
@@ -330,7 +384,9 @@ class Tools:
     ) -> TPContext:
         if isinstance(ctx, TPContext):
             return ctx
-        if not isinstance(ctx, Mapping):  # pragma: no cover - consistent defensive guard
+        if not isinstance(
+            ctx, Mapping
+        ):  # pragma: no cover - consistent defensive guard
             raise TypeError("Context payload must be a TPContext or mapping")
 
         tp_document_id = ctx.get("tp_document_id") or ctx.get("_id")
@@ -385,22 +441,26 @@ class Tools:
             question=question_hint,
         )
 
-    def _list_module_names(self, module_collection: MongoCollection, ctx: TPContext) -> List[str]:
+    def _list_module_names(
+        self, module_collection: MongoCollection, ctx: TPContext
+    ) -> List[str]:
         modules: List[str] = []
-        cursor = (
-            module_collection.find(
-                {"tp_document_id": ctx.tp_document_id},
-                {"module_name": 1},
-            ).sort("module_name", 1)
-        )
+        cursor = module_collection.find(
+            {"tp_document_id": ctx.tp_document_id},
+            {"module_name": 1},
+        ).sort("module_name", 1)
         for row in cursor:
             name = row.get("module_name")
             if name:
                 modules.append(name)
         return modules
 
-    def _list_subflows(self, test_collection: MongoCollection, ctx: TPContext) -> List[str]:
-        distinct = test_collection.distinct("subflow", {"tp_document_id": ctx.tp_document_id})
+    def _list_subflows(
+        self, test_collection: MongoCollection, ctx: TPContext
+    ) -> List[str]:
+        distinct = test_collection.distinct(
+            "subflow", {"tp_document_id": ctx.tp_document_id}
+        )
         flows = sorted(value for value in distinct if isinstance(value, str) and value)
         return flows
 
@@ -448,12 +508,17 @@ class Tools:
 
         if not product_code:
             fuzzy_source = product_name_hint or question
-            fuzzy_match = self._infer_product_from_question(product_collection, fuzzy_source or "")
+            fuzzy_match = self._infer_product_from_question(
+                product_collection, fuzzy_source or ""
+            )
             if fuzzy_match:
                 fuzzy_code = fuzzy_match.get("product_code")
                 if fuzzy_code:
                     fuzzy_conditions = [
-                        entry for entry in conditions if not entry.get("$or") or "product.product_code" not in entry["$or"][0]
+                        entry
+                        for entry in conditions
+                        if not entry.get("$or")
+                        or "product.product_code" not in entry["$or"][0]
                     ]
                     fuzzy_conditions.append(
                         {
@@ -463,7 +528,12 @@ class Tools:
                             ]
                         }
                     )
-                    attempts.append(({"$and": fuzzy_conditions} if fuzzy_conditions else {}, fuzzy_match.get("product_name")))
+                    attempts.append(
+                        (
+                            {"$and": fuzzy_conditions} if fuzzy_conditions else {},
+                            fuzzy_match.get("product_name"),
+                        )
+                    )
 
         for query, inferred_name in attempts:
             cursor = ingest_collection.find(query).sort("ingested_at", -1)
@@ -477,7 +547,9 @@ class Tools:
                 tp_name=doc.get("tp_name", "unknown"),
                 git_hash=doc.get("git_hash", "unknown"),
                 tp_document_id=doc["_id"],
-                product_code=product_blob.get("product_code") or metadata.get("product_code") or product_code,
+                product_code=product_blob.get("product_code")
+                or metadata.get("product_code")
+                or product_code,
                 product_name=product_blob.get("product_name")
                 or metadata.get("product_name")
                 or inferred_name
@@ -487,9 +559,13 @@ class Tools:
             )
 
         suggestion_text = question or product_name_hint or product_code or "product"
-        suggestions = self._candidate_product_suggestions(product_collection, suggestion_text)
+        suggestions = self._candidate_product_suggestions(
+            product_collection, suggestion_text
+        )
         if not suggestions:
-            suggestions = self._candidate_product_suggestions(product_collection, "", limit=8)
+            suggestions = self._candidate_product_suggestions(
+                product_collection, "", limit=8
+            )
         message = (
             "I couldn't find an ingest for that product description. "
             "Please specify a product code (e.g., 8PXM) or pick one of the known names."
@@ -497,7 +573,9 @@ class Tools:
         raise self.ContextResolutionError(message, suggestions)
 
     @staticmethod
-    def _module_filters(module_key: Optional[str]) -> Tuple[Dict[str, Any], Optional[str]]:
+    def _module_filters(
+        module_key: Optional[str],
+    ) -> Tuple[Dict[str, Any], Optional[str]]:
         if not module_key:
             return {}, None
         parts = module_key.split("_", 1)
@@ -547,9 +625,7 @@ class Tools:
             "frequency": 1,
         }
         cursor = (
-            test_collection.find(filters, projection)
-            .sort(sort_field, 1)
-            .limit(limit)
+            test_collection.find(filters, projection).sort(sort_field, 1).limit(limit)
         )
         return list(cursor)
 
@@ -570,7 +646,9 @@ class Tools:
                     status=row.get("status", "n/a"),
                     subflow=row.get("subflow", "n/a"),
                     module=f"{row.get('scrum', 'n/a')}::{row.get('module_name', 'n/a')}",
-                    test_type=row.get("test_type_detail") or row.get("test_type") or "n/a",
+                    test_type=row.get("test_type_detail")
+                    or row.get("test_type")
+                    or "n/a",
                     level=row.get("level") or "n/a",
                     timing=row.get("timing") or "n/a",
                     plist=row.get("plist") or "n/a",
@@ -579,7 +657,9 @@ class Tools:
         return "\n".join(lines)
 
     # Connection helpers -----------------------------------------------------------------
-    def _get_mongo_client(self, user_valves: Optional["Tools.UserValves"] = None) -> Optional[MongoClientType]:
+    def _get_mongo_client(
+        self, user_valves: Optional["Tools.UserValves"] = None
+    ) -> Optional[MongoClientType]:
         uri = MONGO_URI
         if self._mongo_client is None:
             self._mongo_client = MongoClient(uri)
@@ -589,19 +669,28 @@ class Tools:
         return client[MONGO_DATABASE][name]
 
     # Query helpers ----------------------------------------------------------------------
-    def _fetch_product_state(self, product_collection: MongoCollection, product_code: Optional[str]) -> Optional[dict]:
+    def _fetch_product_state(
+        self, product_collection: MongoCollection, product_code: Optional[str]
+    ) -> Optional[dict]:
         if not product_code:
             return None
         return product_collection.find_one({"product_code": product_code})
 
-    def _sample_test_instances(self, test_collection: MongoCollection, ctx: TPContext) -> List[dict]:
-        cursor = (
-            test_collection.find({"tp_document_id": ctx.tp_document_id}, {"module_name": 1, "instance_name": 1, "status": 1})
-            .limit(self.valves.max_test_instance_rows)
-        )
+    def _sample_test_instances(
+        self, test_collection: MongoCollection, ctx: TPContext
+    ) -> List[dict]:
+        cursor = test_collection.find(
+            {"tp_document_id": ctx.tp_document_id},
+            {"module_name": 1, "instance_name": 1, "status": 1},
+        ).limit(self.valves.max_test_instance_rows)
         return list(cursor)
 
-    def _sample_flow_rows(self, flow_collection: MongoCollection, ctx: TPContext, keyword: Optional[str] = None) -> List[dict]:
+    def _sample_flow_rows(
+        self,
+        flow_collection: MongoCollection,
+        ctx: TPContext,
+        keyword: Optional[str] = None,
+    ) -> List[dict]:
         filters: Dict[str, Any] = {"tp_document_id": ctx.tp_document_id}
         if keyword:
             filters["$or"] = [
@@ -610,16 +699,29 @@ class Tools:
                 {"instance": {"$regex": keyword, "$options": "i"}},
             ]
         return list(
-            flow_collection.find(filters, {"module": 1, "dutflow": 1, "instance": 1, "sequence_index": 1})
-            .limit(self.valves.max_flow_rows)
+            flow_collection.find(
+                filters, {"module": 1, "dutflow": 1, "instance": 1, "sequence_index": 1}
+            ).limit(self.valves.max_flow_rows)
         )
 
-    def _fetch_module_summary(self, module_collection: MongoCollection, ctx: TPContext) -> List[dict]:
+    def _fetch_module_summary(
+        self, module_collection: MongoCollection, ctx: TPContext
+    ) -> List[dict]:
         return list(
-            module_collection.find({"tp_document_id": ctx.tp_document_id}, {"module_name": 1, "total_tests": 1, "total_kill": 1, "percent_kill": 1})
+            module_collection.find(
+                {"tp_document_id": ctx.tp_document_id},
+                {
+                    "module_name": 1,
+                    "total_tests": 1,
+                    "total_kill": 1,
+                    "percent_kill": 1,
+                },
+            )
         )
 
-    def _fetch_setpoints(self, setpoints_collection: MongoCollection, ctx: TPContext, keyword: str) -> List[dict]:
+    def _fetch_setpoints(
+        self, setpoints_collection: MongoCollection, ctx: TPContext, keyword: str
+    ) -> List[dict]:
         regex = {"$regex": keyword, "$options": "i"}
         filters = {
             "tp_document_id": ctx.tp_document_id,
@@ -630,10 +732,14 @@ class Tools:
             ],
         }
         return list(
-            setpoints_collection.find(filters, {"module": 1, "test_instance": 1, "method": 1, "values": 1}).limit(50)
+            setpoints_collection.find(
+                filters, {"module": 1, "test_instance": 1, "method": 1, "values": 1}
+            ).limit(50)
         )
 
-    def _fetch_artifact_summary(self, artifacts_collection: MongoCollection, ctx: TPContext) -> Dict[str, int]:
+    def _fetch_artifact_summary(
+        self, artifacts_collection: MongoCollection, ctx: TPContext
+    ) -> Dict[str, int]:
         pipeline = [
             {"$match": {"tp_document_id": ctx.tp_document_id}},
             {"$group": {"_id": "$category", "count": {"$sum": 1}}},
@@ -651,7 +757,13 @@ class Tools:
         tp_document_id = self._ensure_tp_document_id(ctx)
         pipeline = [
             {"$match": {"tp_document_id": tp_document_id}},
-            {"$group": {"_id": "$module_name", "files": {"$addToSet": "$file_name"}, "count": {"$sum": 1}}},
+            {
+                "$group": {
+                    "_id": "$module_name",
+                    "files": {"$addToSet": "$file_name"},
+                    "count": {"$sum": 1},
+                }
+            },
             {"$sort": {"_id": 1}},
         ]
         modules: List[dict] = []
@@ -660,7 +772,13 @@ class Tools:
             if not module:
                 continue
             files = sorted(file for file in row.get("files", []) if file)
-            modules.append({"module": module, "files": files, "count": row.get("count", len(files))})
+            modules.append(
+                {
+                    "module": module,
+                    "files": files,
+                    "count": row.get("count", len(files)),
+                }
+            )
         return modules
 
     @staticmethod
@@ -713,7 +831,11 @@ class Tools:
         if not entries:
             return f"No HVQK configs recorded for {module_name}."
         label_parts = module_name.split("_", 1)
-        canonical_label = f"{label_parts[0]}::{label_parts[1]}" if len(label_parts) == 2 else module_name
+        canonical_label = (
+            f"{label_parts[0]}::{label_parts[1]}"
+            if len(label_parts) == 2
+            else module_name
+        )
         lines = [
             f"🧾 HVQK configs for {module_name} ({len(entries)} files)",
             f"HVQK coverage for {module_name}",
@@ -786,17 +908,25 @@ class Tools:
         return list(collection_handle.aggregate(pipeline))
 
     # Answer generators -----------------------------------------------------------------
-    def _format_current_tp_answer(self, ctx: TPContext, product_state: Optional[dict]) -> str:
+    def _format_current_tp_answer(
+        self, ctx: TPContext, product_state: Optional[dict]
+    ) -> str:
         ingested = ctx.ingested_at.isoformat() if ctx.ingested_at else "unknown"
-        product_line = f"Product: {ctx.product_name or 'unknown'} ({ctx.product_code or 'n/a'})"
+        product_line = (
+            f"Product: {ctx.product_name or 'unknown'} ({ctx.product_code or 'n/a'})"
+        )
         product_details = []
         if product_state:
             if product_state.get("latest_tp"):
-                product_details.append(f"Configured latest TP: {product_state['latest_tp']}")
+                product_details.append(
+                    f"Configured latest TP: {product_state['latest_tp']}"
+                )
             if product_state.get("network_path"):
                 product_details.append(f"Network path: {product_state['network_path']}")
             if product_state.get("number_of_releases"):
-                product_details.append(f"Tracked releases: {product_state['number_of_releases']}")
+                product_details.append(
+                    f"Tracked releases: {product_state['number_of_releases']}"
+                )
         flow_tables = ctx.metadata.get("flow_table_names", [])
         summary = [
             f"✅ Current ingest for {ctx.tp_name}",
@@ -830,7 +960,9 @@ class Tools:
         for module, instances in list(module_buckets.items())[:8]:
             preview = ", ".join(instances[:5])
             lines.append(f"- {module}: {preview}{'…' if len(instances) > 5 else ''}")
-        status_summary = ", ".join(f"{status}:{count}" for status, count in status_counter.most_common(5))
+        status_summary = ", ".join(
+            f"{status}:{count}" for status, count in status_counter.most_common(5)
+        )
         lines.append(f"Status mix: {status_summary}")
         if flows:
             lines.append("")
@@ -844,7 +976,9 @@ class Tools:
                 lines.append(f"  {idx}: {module}")
         return "\n".join(lines)
 
-    def _format_flow_answer(self, ctx: TPContext, flows: List[dict], keyword: str, description: str) -> str:
+    def _format_flow_answer(
+        self, ctx: TPContext, flows: List[dict], keyword: str, description: str
+    ) -> str:
         if not flows:
             return f"No {description} references matched '{keyword}'."
         lines = [f"🔍 {description} hits for '{keyword}' ({len(flows)} results)"]
@@ -854,7 +988,9 @@ class Tools:
             )
         return "\n".join(lines)
 
-    def _format_setpoint_answer(self, ctx: TPContext, matches: List[dict], keyword: str) -> str:
+    def _format_setpoint_answer(
+        self, ctx: TPContext, matches: List[dict], keyword: str
+    ) -> str:
         if not matches:
             return f"No setpoints mention '{keyword}'."
         lines = [f"⚙️ Setpoint coverage for '{keyword}'"]
@@ -865,8 +1001,12 @@ class Tools:
             )
         return "\n".join(lines)
 
-    def _format_module_focus(self, ctx: TPContext, modules: List[dict], keyword: str, description: str) -> str:
-        matches = [row for row in modules if keyword in (row.get("module_name") or "").lower()]
+    def _format_module_focus(
+        self, ctx: TPContext, modules: List[dict], keyword: str, description: str
+    ) -> str:
+        matches = [
+            row for row in modules if keyword in (row.get("module_name") or "").lower()
+        ]
         if not matches:
             return f"No modules hint at {description}."
         lines = [f"🛠️ {description.title()} modules"]
@@ -876,13 +1016,19 @@ class Tools:
             )
         return "\n".join(lines)
 
-    def _format_snapshot(self, ctx: TPContext, modules: List[dict], artifacts: Dict[str, int]) -> str:
-        top_modules = sorted(modules, key=lambda row: row.get("total_tests", 0) or 0, reverse=True)[:5]
+    def _format_snapshot(
+        self, ctx: TPContext, modules: List[dict], artifacts: Dict[str, int]
+    ) -> str:
+        top_modules = sorted(
+            modules, key=lambda row: row.get("total_tests", 0) or 0, reverse=True
+        )[:5]
         module_lines = [
             f"- {row.get('module_name')} (tests={row.get('total_tests')}, kill={row.get('total_kill')}, kill%={row.get('percent_kill')})"
             for row in top_modules
         ]
-        artifact_lines = [f"{category}:{count}" for category, count in artifacts.items()]
+        artifact_lines = [
+            f"{category}:{count}" for category, count in artifacts.items()
+        ]
         return "\n".join(
             [
                 f"📊 Snapshot for {ctx.tp_name}",
@@ -922,10 +1068,14 @@ class Tools:
         user_valves = self.UserValves()
         client = self._get_mongo_client(user_valves)
         if client is None:
-            await emitter.error("Mongo connection unavailable. Hardcoded URI returned no client.")
+            await emitter.error(
+                "Mongo connection unavailable. Hardcoded URI returned no client."
+            )
             return "Mongo connection is not configured."
 
-        product_code = product_code or user_valves.product_code or self.valves.default_product_code
+        product_code = (
+            product_code or user_valves.product_code or self.valves.default_product_code
+        )
         tp_name = tp_name or user_valves.tp_name or self.valves.default_tp_name
 
         ingest_collection = self._get_collection(client, INGEST_COLLECTION)
@@ -947,7 +1097,11 @@ class Tools:
                 question=question,
             )
         except self.ContextResolutionError as exc:
-            suggestion_lines = "\n".join(f"- {label}" for label in exc.suggestions) if exc.suggestions else ""
+            suggestion_lines = (
+                "\n".join(f"- {label}" for label in exc.suggestions)
+                if exc.suggestions
+                else ""
+            )
             guidance = str(exc)
             if suggestion_lines:
                 guidance = f"{guidance}\nTry one of these products next time:\n{suggestion_lines}"
@@ -957,7 +1111,9 @@ class Tools:
             await emitter.error(str(exc))
             return str(exc)
 
-        await emitter.progress(f"Resolved context: {ctx.tp_name} ({ctx.product_code or 'unknown product'})")
+        await emitter.progress(
+            f"Resolved context: {ctx.tp_name} ({ctx.product_code or 'unknown product'})"
+        )
 
         module_collection = self._get_collection(client, MODULE_SUMMARY_COLLECTION)
         test_collection = self._get_collection(client, TEST_INSTANCES_COLLECTION)
@@ -975,28 +1131,40 @@ class Tools:
         normalized_question = question.lower()
         if classification == "hvqk_flow" and module_match:
             classification = "hvqk_module_detail"
-        if classification == "fallback" and (module_match or flow_match) and "test" in normalized_question:
+        if (
+            classification == "fallback"
+            and (module_match or flow_match)
+            and "test" in normalized_question
+        ):
             classification = "module_flow_tests"
 
         answer_lines: List[str] = []
 
         try:
             if classification == "current_tp":
-                product_state = self._fetch_product_state(product_collection, ctx.product_code)
+                product_state = self._fetch_product_state(
+                    product_collection, ctx.product_code
+                )
                 answer_lines.append(self._format_current_tp_answer(ctx, product_state))
 
             elif classification == "list_tests":
                 tests = self._sample_test_instances(test_collection, ctx)
                 answer_lines.append(
-                    self._format_test_list_answer(ctx, tests, flows_catalog, modules_catalog)
+                    self._format_test_list_answer(
+                        ctx, tests, flows_catalog, modules_catalog
+                    )
                 )
 
             elif classification == "hvqk_flow":
                 flows = self._sample_flow_rows(flow_collection, ctx, keyword="hvqk")
                 if not flows:
-                    flows = self._sample_flow_rows(flow_collection, ctx, keyword="water")
+                    flows = self._sample_flow_rows(
+                        flow_collection, ctx, keyword="water"
+                    )
                 answer_lines.append(
-                    self._format_flow_answer(ctx, flows, "HVQK", "HVQK/Waterfall flow content")
+                    self._format_flow_answer(
+                        ctx, flows, "HVQK", "HVQK/Waterfall flow content"
+                    )
                 )
                 hvqk_summary = self._summarize_hvqk_modules(test_collection, ctx)
                 answer_lines.append(self._format_hvqk_summary(hvqk_summary))
@@ -1010,12 +1178,18 @@ class Tools:
                     ctx,
                     module_name=module_match,
                 )
-                answer_lines.append(self._format_hvqk_module_detail(module_name, hvqk_entries))
+                answer_lines.append(
+                    self._format_hvqk_module_detail(module_name, hvqk_entries)
+                )
 
             elif classification == "tp_snapshot":
                 modules = self._fetch_module_summary(module_collection, ctx)
-                artifact_summary = self._fetch_artifact_summary(artifacts_collection, ctx)
-                answer_lines.append(self._format_snapshot(ctx, modules, artifact_summary))
+                artifact_summary = self._fetch_artifact_summary(
+                    artifacts_collection, ctx
+                )
+                answer_lines.append(
+                    self._format_snapshot(ctx, modules, artifact_summary)
+                )
                 sample_rows = self._fetch_test_rows(test_collection, ctx, limit=15)
                 answer_lines.append(
                     self._format_detailed_tests(
@@ -1037,7 +1211,9 @@ class Tools:
                     },
                     limit=min(100, self.valves.max_test_instance_rows),
                 )
-                lines = [self._format_flow_answer(ctx, flows, "VCC", "VCC continuity flows")]
+                lines = [
+                    self._format_flow_answer(ctx, flows, "VCC", "VCC continuity flows")
+                ]
                 lines.append(
                     self._format_detailed_tests(
                         continuity_rows,
@@ -1047,28 +1223,67 @@ class Tools:
                 )
                 answer_lines.extend(lines)
 
+            elif classification == "test_class_filter":
+                # Extract test class name from question (e.g., "VminTC")
+                test_class_name = self._extract_test_class_from_question(question)
+                if not test_class_name:
+                    test_class_name = "VminTC"  # Default fallback
+                filters: Dict[str, Any] = {
+                    "test_type": {"$regex": f"^{test_class_name}$", "$options": "i"}
+                }
+                module_filters, module_label = self._module_filters(module_match)
+                filters.update(module_filters)
+                if flow_match:
+                    filters["subflow"] = flow_match
+                rows = self._fetch_test_rows(
+                    test_collection,
+                    ctx,
+                    extra_filters=filters,
+                    limit=self.valves.max_test_instance_rows,
+                )
+                descriptor = f"test class {test_class_name}"
+                if module_label:
+                    descriptor += f" in {module_label}"
+                if flow_match:
+                    descriptor += f" / {flow_match}"
+                answer_lines.append(
+                    self._format_detailed_tests(
+                        rows,
+                        title=f"Settings of {descriptor}",
+                        limit=self.valves.max_test_instance_rows,
+                    )
+                )
+
             elif classification == "setpoints":
                 matches = self._fetch_setpoints(setpoints_collection, ctx, "VMIN")
                 answer_lines.append(self._format_setpoint_answer(ctx, matches, "Vmin"))
 
             elif classification == "array_repair":
                 modules = self._fetch_module_summary(module_collection, ctx)
-                answer_lines.append(self._format_module_focus(ctx, modules, "repair", "array repair"))
+                answer_lines.append(
+                    self._format_module_focus(ctx, modules, "repair", "array repair")
+                )
 
             elif classification == "hot_repair":
                 tests = self._sample_test_instances(test_collection, ctx)
                 hot = [
                     row
                     for row in tests
-                    if "hot" in (row.get("instance_name") or "").lower() or "hot" in (row.get("module_name") or "").lower()
+                    if "hot" in (row.get("instance_name") or "").lower()
+                    or "hot" in (row.get("module_name") or "").lower()
                 ]
                 if hot:
                     answer_lines.append(
                         "🔥 Hot repair instances: "
-                        + ", ".join(f"{row.get('module_name')}::{row.get('instance_name')}" for row in hot[:6])
+                        + ", ".join(
+                            f"{row.get('module_name')}::{row.get('instance_name')}"
+                            for row in hot[:6]
+                        )
                     )
                 else:
-                    answer_lines.append("No hot repair instances detected in the sampled PAS data.")
+                    answer_lines.append(
+                        "No hot repair instances detected in the sampled PAS data."
+                    )
 
             elif classification == "sdt_flow":
                 flows = self._sample_flow_rows(flow_collection, ctx, keyword="sdt")
@@ -1129,13 +1344,23 @@ class Tools:
             else:
                 modules = self._fetch_module_summary(module_collection, ctx)
                 tests = self._sample_test_instances(test_collection, ctx)
-                summary = self._format_snapshot(ctx, modules, self._fetch_artifact_summary(artifacts_collection, ctx))
+                summary = self._format_snapshot(
+                    ctx,
+                    modules,
+                    self._fetch_artifact_summary(artifacts_collection, ctx),
+                )
                 answer_lines.append(summary)
                 answer_lines.append(
-                    self._format_test_list_answer(ctx, tests, flows_catalog, modules_catalog)
+                    self._format_test_list_answer(
+                        ctx, tests, flows_catalog, modules_catalog
+                    )
                 )
 
-            result = "\n\n".join(answer_lines) if answer_lines else "I could not build a response."
+            result = (
+                "\n\n".join(answer_lines)
+                if answer_lines
+                else "I could not build a response."
+            )
             await emitter.success("Answer ready")
             return result
         except PyMongoError as exc:

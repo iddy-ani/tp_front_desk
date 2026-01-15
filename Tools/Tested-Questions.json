@@ -1,6 +1,6 @@
 {
     "description": "Documents how test_program_intelligence.py programmatically answers each question from Testing-Questions.json. While Testing-Questions.json describes manual retrieval methods, this file explains the tool's automated approach using MongoDB queries and ingested data.",
-    "last_updated": "2026-01-15",
+    "last_updated": "2026-01-15T12:00:00Z",
     "questions": {
         "Q1": {
             "question": "What is the current test program for PantherLake CPU-U",
@@ -141,6 +141,24 @@
             ],
             "key_fields_returned": ["file_name", "config.DomainName", "config.InstanceName", "config.VoltageStart", "config.VoltageStop", "config.Pin", "config.VoltageSteps"],
             "canonical_tokens": ["ARR_ATOM", "ATOMHP", "ATOMLP", "CACHE_ATOM_HP", "VCCIA_HC", "atom_hp_cache_all_stress.hvqk.config.json"]
+        },
+        "Q9": {
+            "question": "What are the settings of the test class VminTC throughout the latest PantherLake CPU-U test program?",
+            "classification": "test_class_filter",
+            "tool_method": "_extract_test_class_from_question, _fetch_test_rows with test_type filter, _format_detailed_tests",
+            "data_sources": ["test_instances filtered by test_type='VminTC'"],
+            "mongo_collections": ["test_instances"],
+            "query_logic": [
+                "1. Classify question as 'test_class_filter' via QuestionClassifier (triggers on 'vmintc', 'test class', 'settings of the test class')",
+                "2. Call _extract_test_class_from_question() which matches 'VminTC' against KNOWN_TEST_CLASSES list",
+                "3. Use current TPContext from product hint ('PantherLake CPU-U' → 8PXM → latest ingested TP)",
+                "4. Build filter: {'test_type': {'$regex': '^VminTC$', '$options': 'i'}}",
+                "5. Optionally combine with module_match and flow_match filters if detected in question",
+                "6. Query test_instances with tp_document_id + test_type filter, limited by max_test_instance_rows valve (default 250)",
+                "7. Format results using _format_detailed_tests() showing instance_name, status, subflow, module, level, timing, plist"
+            ],
+            "key_fields_returned": ["instance_name", "status", "bypass", "bins", "counters", "level", "timing", "plist", "scrum", "module_name", "subflow", "test_type", "voltage_domain", "corner", "frequency"],
+            "canonical_tokens": ["VminTC", "ARR_ATOM", "ALL_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_INTM", "Kill", "Monitor", "Bypassed"]
         }
     },
     "collection_schema_notes": {
@@ -176,7 +194,8 @@
         "atspeed_detail": ["atspeed"],
         "tp_snapshot": ["what does it look like", "overview", "snapshot"],
         "vcc_continuity": ["vcc continuity", "continuity"],
-        "setpoints": ["vMintc", "settings", "test class"],
+        "test_class_filter": ["vmintc", "test class", "settings of the test class"],
+        "setpoints": ["settings", "setpoint"],
         "array_repair": ["array repair", "running array", "repair flows"],
         "hot_repair": ["hot repair", "hot-repair", "hotrepair"],
         "sdt_flow": ["sdt flow", "sdt content"]
