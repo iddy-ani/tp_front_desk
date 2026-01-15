@@ -213,6 +213,153 @@
             "canonical_tokens": ["SDTALARM", "SDTBEGIN", "SDTBIN", "SDTEND", "SDTENDTFM", "SDTENDXFM", "SDTFINAL", "SDTSTART"]
         }
     },
+    "productxi_questions": {
+        "PXQ1": {
+            "question": "What is the yield for PantherLake CPU-U?",
+            "classification": "yield_metrics",
+            "tool_method": "_fetch_productxi_data, _format_yield_metrics",
+            "data_sources": ["ProductXi_PROD collection filtered by ProductCode prefix"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify question as 'yield_metrics' via QuestionClassifier (triggers on 'yield', 'sort yield', 'sdt yield')",
+                "2. Resolve product_code from question ('PantherLake CPU-U' → '8PXM')",
+                "3. Map product_code to devrevstep prefix (first 4 chars: '8PXM')",
+                "4. Query ProductXi_PROD with filter: {ProductCode: {$regex: '^8PXM'}}",
+                "5. Default to latest Work Week, or filter by specific week/last N weeks if mentioned",
+                "6. Sort by Work Week DESC, return top records",
+                "7. Format output showing Sort_Yield and SDT_Yield percentages per week/step"
+            ],
+            "key_fields_returned": ["Work Week", "ProductCode", "Stepping", "Sort_Yield", "SDT_Yield"],
+            "canonical_tokens": ["WW202602", "SDJ", "G1", "41.59%", "95.8%"]
+        },
+        "PXQ2": {
+            "question": "Show me the SDT yield for PantherLake CPU-U for the last 4 weeks",
+            "classification": "yield_metrics",
+            "tool_method": "_fetch_productxi_data with last_n_weeks=4, _format_yield_metrics",
+            "data_sources": ["ProductXi_PROD collection filtered by ProductCode prefix and last 4 weeks"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify as 'yield_metrics', extract 'last 4 weeks' via _extract_weeks_count_from_question()",
+                "2. Query ProductXi_PROD sorted by Work Week DESC, limit to 4 distinct weeks",
+                "3. Return SDT_Yield for each week"
+            ],
+            "key_fields_returned": ["Work Week", "ProductCode", "Stepping", "SDT_Yield"],
+            "canonical_tokens": ["WW202602", "WW202601", "WW202552", "WW202551"]
+        },
+        "PXQ3": {
+            "question": "What is the sort yield trend for PantherLake CPU-U?",
+            "classification": "yield_metrics",
+            "tool_method": "_fetch_productxi_data, _format_yield_metrics",
+            "data_sources": ["ProductXi_PROD collection"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify as 'yield_metrics' (triggers on 'yield', 'sort yield')",
+                "2. Return latest week Sort_Yield; user can add 'last N weeks' for trend"
+            ],
+            "key_fields_returned": ["Work Week", "Sort_Yield"],
+            "canonical_tokens": ["WW202602", "41.59%"]
+        },
+        "PXQ4": {
+            "question": "What is the dominant fail for PantherLake CPU-U?",
+            "classification": "dominant_fail",
+            "tool_method": "_fetch_productxi_data, _format_dominant_fail",
+            "data_sources": ["ProductXi_PROD collection filtered by ProductCode prefix"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify as 'dominant_fail' via QuestionClassifier (triggers on 'dominant fail', 'top fail', 'failing bins')",
+                "2. Query ProductXi_PROD for matching product",
+                "3. Extract Dominant_Fail_Bin and SDT_BinGrp_8_88_99 fields",
+                "4. Format as dominant bin analysis"
+            ],
+            "key_fields_returned": ["Work Week", "ProductCode", "Dominant_Fail_Bin", "SDT_BinGrp_8_88_99"],
+            "canonical_tokens": ["WW202602", "Bin 41", "1.82%"]
+        },
+        "PXQ5": {
+            "question": "What are the top failing bins for PantherLake CPU-U for the last 2 weeks?",
+            "classification": "dominant_fail",
+            "tool_method": "_fetch_productxi_data with last_n_weeks=2, _format_dominant_fail",
+            "data_sources": ["ProductXi_PROD collection filtered by last 2 weeks"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify as 'dominant_fail' (triggers on 'failing bins')",
+                "2. Extract 'last 2 weeks' via _extract_weeks_count_from_question()",
+                "3. Return dominant fail bins for each of the last 2 weeks"
+            ],
+            "key_fields_returned": ["Work Week", "Dominant_Fail_Bin", "SDT_BinGrp_8_88_99"],
+            "canonical_tokens": ["WW202602", "WW202601"]
+        },
+        "PXQ6": {
+            "question": "What is the production volume for PantherLake CPU-U?",
+            "classification": "production_summary",
+            "tool_method": "_fetch_productxi_data, _format_production_summary",
+            "data_sources": ["ProductXi_PROD collection"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify as 'production_summary' (triggers on 'production volume', 'wafers', 'dpw')",
+                "2. Query ProductXi_PROD for matching product",
+                "3. Extract Total_DPW, Total_Wfrs, Source fields",
+                "4. Format production summary with wafer counts and DPW"
+            ],
+            "key_fields_returned": ["Work Week", "ProductCode", "Stepping", "PRQ", "Total_Wfrs", "Total_DPW", "Source"],
+            "canonical_tokens": ["WW202602", "PRQ", "900 wafers", "640 DPW", "D1D,F32"]
+        },
+        "PXQ7": {
+            "question": "How many wafers were processed for PantherLake CPU-U last week?",
+            "classification": "production_summary",
+            "tool_method": "_fetch_productxi_data, _format_production_summary",
+            "data_sources": ["ProductXi_PROD collection"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify as 'production_summary' (triggers on 'wafers', 'how many wafers')",
+                "2. Return Total_Wfrs for latest week"
+            ],
+            "key_fields_returned": ["Work Week", "Total_Wfrs"],
+            "canonical_tokens": ["WW202602", "900"]
+        },
+        "PXQ8": {
+            "question": "What is the DPW for PantherLake CPU-U?",
+            "classification": "production_summary",
+            "tool_method": "_fetch_productxi_data, _format_production_summary",
+            "data_sources": ["ProductXi_PROD collection"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify as 'production_summary' (triggers on 'dpw', 'die per wafer')",
+                "2. Return Total_DPW for latest week"
+            ],
+            "key_fields_returned": ["Work Week", "Total_DPW"],
+            "canonical_tokens": ["WW202602", "640"]
+        },
+        "PXQ9": {
+            "question": "What is the resort rate for PantherLake CPU-U?",
+            "classification": "resort_rate",
+            "tool_method": "_fetch_productxi_data, _format_resort_rate",
+            "data_sources": ["ProductXi_PROD collection"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify as 'resort_rate' (triggers on 'resort rate', 'resort')",
+                "2. Query ProductXi_PROD for matching product",
+                "3. Extract Resort_Rate and Resort_Rate_TL (traffic light) fields",
+                "4. Format with percentage and traffic light indicator"
+            ],
+            "key_fields_returned": ["Work Week", "ProductCode", "Resort_Rate", "Resort_Rate_TL"],
+            "canonical_tokens": ["WW202602", "2.87%", "G"]
+        },
+        "PXQ10": {
+            "question": "What is the PRQ status for PantherLake CPU-U?",
+            "classification": "prq_status",
+            "tool_method": "_fetch_productxi_data, _format_prq_status",
+            "data_sources": ["ProductXi_PROD collection"],
+            "mongo_collections": ["ProductXi_PROD (productXi database)"],
+            "query_logic": [
+                "1. Classify as 'prq_status' (triggers on 'prq status', 'prq', 'qualification')",
+                "2. Query ProductXi_PROD for matching product",
+                "3. Extract PRQ and Stepping fields",
+                "4. Format as PRQ status with stepping info"
+            ],
+            "key_fields_returned": ["Work Week", "ProductCode", "PRQ", "Stepping"],
+            "canonical_tokens": ["PRQ", "SDJ", "G1"]
+        }
+    },
     "collection_schema_notes": {
         "ingest_artifacts": {
             "description": "Top-level ingest document per TP revision",
@@ -237,6 +384,11 @@
         "product_configs": {
             "description": "Product catalog from Products.json",
             "key_fields": ["product_code", "product_name", "network_path", "latest_tp"]
+        },
+        "ProductXi_PROD": {
+            "description": "Production metrics from ProductXi MongoDB (separate database). One document per product/week/stepping combination.",
+            "database": "productXi",
+            "key_fields": ["Work Week", "ProductCode", "Stepping", "PRQ", "Sort_Yield", "SDT_Yield", "Total_DPW", "Total_Wfrs", "Source", "Dominant_Fail_Bin", "SDT_BinGrp_8_88_99", "Resort_Rate", "Resort_Rate_TL"]
         }
     },
     "classification_keywords": {
@@ -250,6 +402,11 @@
         "setpoints": ["settings", "setpoint"],
         "hot_repair": ["hot array repair", "hot repair", "hot-repair", "hotrepair"],
         "array_repair": ["array repair", "running array", "repair flows"],
-        "sdt_flow": ["sdt flow", "sdt content"]
+        "sdt_flow": ["sdt flow", "sdt content"],
+        "yield_metrics": ["yield", "sort yield", "sdt yield", "production yield"],
+        "dominant_fail": ["dominant fail", "top fail", "failing bins", "failing bin", "bin failure"],
+        "production_summary": ["production summary", "production metrics", "production volume", "wafer count", "wafers processed", "how many wafers", "wafers", "dpw", "die per wafer"],
+        "resort_rate": ["resort rate", "resort"],
+        "prq_status": ["prq status", "prq", "qualification"]
     }
 }

@@ -134,8 +134,8 @@ class QuestionClassifier:
         ("sdt_flow", ("sdt flow", "sdt content")),
         # ProductXi production metrics classifications
         ("yield_metrics", ("yield", "sort yield", "sdt yield", "production yield")),
-        ("dominant_fail", ("dominant fail", "top fail", "failing bin", "bin failure")),
-        ("production_summary", ("production summary", "production metrics", "wafer count", "dpw", "die per wafer")),
+        ("dominant_fail", ("dominant fail", "top fail", "failing bins", "failing bin", "bin failure")),
+        ("production_summary", ("production summary", "production metrics", "production volume", "wafer count", "wafers processed", "how many wafers", "wafers", "dpw", "die per wafer")),
         ("resort_rate", ("resort rate", "resort")),
         ("prq_status", ("prq status", "prq", "qualification")),
     ]
