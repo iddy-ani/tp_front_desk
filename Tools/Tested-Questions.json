@@ -194,6 +194,23 @@
             ],
             "key_fields_returned": ["instance_name", "status", "subflow", "module_name", "test_type", "test_type_detail", "level", "timing", "plist"],
             "canonical_tokens": ["ARR_COMMON", "FUSECONFIG", "REPAIR", "PrimePatConfigTestMethod", "SDTBEGIN", "SDTEND"]
+        },
+        "Q12": {
+            "question": "Is there much content in the SDT flow of PantherLake CPU-U?",
+            "classification": "sdt_flow",
+            "tool_method": "aggregation pipeline for subflow counts, _fetch_test_rows with subflow filter, _format_detailed_tests",
+            "data_sources": ["test_instances filtered by subflow containing 'SDT'"],
+            "mongo_collections": ["test_instances", "product_configs"],
+            "query_logic": [
+                "1. Classify question as 'sdt_flow' via QuestionClassifier (triggers on 'sdt flow', 'sdt content')",
+                "2. Resolve TPContext: since no tp_name provided, look up latest_tp from product_configs",
+                "3. Run aggregation pipeline: $match subflow regex 'SDT' → $group by subflow with count → $sort by _id",
+                "4. Calculate total_sdt_count by summing all group counts",
+                "5. Fetch sample rows with filter: {subflow: {$regex: 'SDT'}}, sorted by instance_name",
+                "6. Format output: '📊 SDT flow content: N total test(s) across M SDT subflow(s)' + per-subflow breakdown + detailed test list"
+            ],
+            "key_fields_returned": ["instance_name", "status", "subflow", "module_name", "test_type", "level", "timing", "plist"],
+            "canonical_tokens": ["SDTALARM", "SDTBEGIN", "SDTBIN", "SDTEND", "SDTENDTFM", "SDTENDXFM", "SDTFINAL", "SDTSTART"]
         }
     },
     "collection_schema_notes": {

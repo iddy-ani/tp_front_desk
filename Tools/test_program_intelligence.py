@@ -1366,12 +1366,55 @@ class Tools:
                     )
 
             elif classification == "sdt_flow":
-                flows = self._sample_flow_rows(flow_collection, ctx, keyword="sdt")
-                if not flows:
-                    flows = self._sample_flow_rows(flow_collection, ctx)
-                answer_lines.append(
-                    self._format_flow_answer(ctx, flows, "SDT", "SDT flow content")
+                # Q12: Query test_instances for subflow containing 'SDT'
+                # First, get aggregated counts per SDT subflow
+                pipeline = [
+                    {"$match": {
+                        "tp_document_id": ctx.tp_document_id,
+                        "subflow": {"$regex": "SDT", "$options": "i"},
+                    }},
+                    {"$group": {
+                        "_id": "$subflow",
+                        "count": {"$sum": 1},
+                    }},
+                    {"$sort": {"_id": 1}},
+                ]
+                subflow_agg = list(test_collection.aggregate(pipeline))
+                total_sdt_count = sum(item["count"] for item in subflow_agg)
+                
+                # Fetch sample rows
+                filters: Dict[str, Any] = {
+                    "subflow": {"$regex": "SDT", "$options": "i"},
+                }
+                rows = self._fetch_test_rows(
+                    test_collection,
+                    ctx,
+                    extra_filters=filters,
+                    limit=self.valves.max_test_instance_rows,
+                    sort_field="instance_name",
                 )
+                
+                if rows or subflow_agg:
+                    answer_lines.append(
+                        f"📊 SDT flow content: {total_sdt_count} total test(s) across {len(subflow_agg)} SDT subflow(s)"
+                    )
+                    # Show subflow breakdown from aggregation
+                    subflow_summary = ", ".join(
+                        f"{item['_id']}: {item['count']}" for item in subflow_agg
+                    )
+                    answer_lines.append(f"   Subflows: {subflow_summary}")
+                    if rows:
+                        answer_lines.append(
+                            self._format_detailed_tests(
+                                rows,
+                                title=f"SDT flow instances (showing {len(rows)} of {total_sdt_count})",
+                                limit=self.valves.max_test_instance_rows,
+                            )
+                        )
+                else:
+                    answer_lines.append(
+                        "❌ No SDT flow content found (no tests with SubFlow containing 'SDT')."
+                    )
 
             elif classification == "module_flow_tests":
                 module_filters, module_label = self._module_filters(module_match)
