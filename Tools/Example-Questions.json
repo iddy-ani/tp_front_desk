@@ -1,16 +1,36 @@
 {
-    "Q1":{"Question":"What is the current test program for PantherLake CPU-U","Status":"Answered"},
-    "Q2":{"Question":"What tests does it have","Status":"Answered"},
-    "Q3":{"Question":"Does PTUSDJXA1H21G402546 have a HVQK water fall flow","Status":"Answered"},
-    "Q4":{"Question":"What does the ARR_ATOM HVQK waterfall look like?","Status":"Answered"},
-    "Q5":{"Question":"What does it look like","Status":"Answered"},
-    "Q6":{"Question":"Does PTUSDJXA1H21G402546 have VCC continuity in the flow and where","Status":"Answered"},
-    "Q7":{"Question":"What does it look like","Status":"Answered"},
-    "Q8":{"Question":"What are the settings of the test class VminTC throughout the latest PantherLake CPU-U test program?","Status":"Answered"},
-    "Q9":{"Question":"Is PantherLake CPU-U running array repair","Status":"Answered"},
-    "Q10":{"Question":"Is PantherLake CPU-U running hot array repair","Status":"Answered"},
-    "Q11":{"Question":"Is there much content in the SDT flow of PantherLake CPU-U?","Status":"Answered"},
-    "Q12":{"Question":"I am interested in test for the SCN_CORE module in the PREHVQK flow.","Status":"Answered"},
-    "Q13":{"Question":"Can you provide more details on all ATSPEED tests?","Status":"Answered"},
-    "Q14":{"Question":"What program did X (patterns, Levels )  change last","Status":""}
+    "TestProgramQuestions":
+    {
+        "Q1":{"Question":"What is the current test program for PantherLake CPU-U","Status":"Answered"},
+        "Q2":{"Question":"What tests does it have","Status":"Answered"},
+        "Q3":{"Question":"Does PTUSDJXA1H21G402546 have a HVQK water fall flow","Status":"Answered"},
+        "Q4":{"Question":"What does the ARR_ATOM HVQK waterfall look like?","Status":"Answered"},
+        "Q5":{"Question":"What does it look like","Status":"Answered"},
+        "Q6":{"Question":"Does PTUSDJXA1H21G402546 have VCC continuity in the flow and where","Status":"Answered"},
+        "Q7":{"Question":"What does it look like","Status":"Answered"},
+        "Q8":{"Question":"What are the settings of the test class VminTC throughout the latest PantherLake CPU-U test program?","Status":"Answered"},
+        "Q9":{"Question":"Is PantherLake CPU-U running array repair","Status":"Answered"},
+        "Q10":{"Question":"Is PantherLake CPU-U running hot array repair","Status":"Answered"},
+        "Q11":{"Question":"Is there much content in the SDT flow of PantherLake CPU-U?","Status":"Answered"},
+        "Q12":{"Question":"I am interested in test for the SCN_CORE module in the PREHVQK flow.","Status":"Answered"},
+        "Q13":{"Question":"Can you provide more details on all ATSPEED tests?","Status":"Answered"},
+        "Q14":{"Question":"What program did X (patterns, Levels )  change last","Status":""}
+    },
+    "ProductXiQuestions":
+    {   // Yield Metrics
+        "Q1":{"Question":"What is the yield for PantherLake CPU-U?","Status":"Answered"},
+        "Q2":{"Question":"Show me the SDT yield for PantherLake CPU-U for the last 4 weeks","Status":"Answered"},
+        "Q3":{"Question":"What is the sort yield trend for PantherLake CPU-U?","Status":"Answered"},
+        // Dominant Fail
+        "Q4":{"Question":"What is the dominant fail for PantherLake CPU-U?","Status":"Answered"},
+        "Q5":{"Question":"What are the top failing bins for PantherLake CPU-U for the last 2 weeks?","Status":"Answered"},
+        // Production Summary
+        "Q6":{"Question":"What is the production volume for PantherLake CPU-U?","Status":"Answered"},
+        "Q7":{"Question":"How many wafers were processed for PantherLake CPU-U last week?","Status":"Answered"},
+        "Q8":{"Question":"What is the DPW for PantherLake CPU-U?","Status":"Answered"},
+        // Resort Rate
+        "Q9":{"Question":"What is the resort rate for PantherLake CPU-U?","Status":"Answered"},
+        // PRQ Status
+        "Q10":{"Question":"What is the PRQ status for PantherLake CPU-U?","Status":"Answered"}
+    }
 }
