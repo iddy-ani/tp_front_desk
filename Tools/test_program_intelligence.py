@@ -49,6 +49,17 @@ MONGO_URI = (
     "tpfrontdesk?authSource=admin&tls=true"
 )
 
+# ProductXi MongoDB connection for production metrics
+PRODUCTXI_URI = (
+    "mongodb://productXi_rw:205Th1xD5TfW0N3@"
+    "p1ir1mon020.ger.corp.intel.com:7192,"
+    "p2ir1mon020.ger.corp.intel.com:7192,"
+    "p3ir1mon020.ger.corp.intel.com:7192/"
+    "productXi?ssl=true&replicaSet=mongo7192"
+)
+PRODUCTXI_DATABASE = "productXi"
+PRODUCTXI_COLLECTION = "ProductXi_PROD"
+
 MONGO_DATABASE = "tpfrontdesk"
 INGEST_COLLECTION = "ingest_artifacts"
 MODULE_SUMMARY_COLLECTION = "module_summary"
@@ -121,6 +132,12 @@ class QuestionClassifier:
         ("hot_repair", ("hot array repair", "hot repair", "hot-repair", "hotrepair")),
         ("array_repair", ("array repair", "running array", "repair flows")),
         ("sdt_flow", ("sdt flow", "sdt content")),
+        # ProductXi production metrics classifications
+        ("yield_metrics", ("yield", "sort yield", "sdt yield", "production yield")),
+        ("dominant_fail", ("dominant fail", "top fail", "failing bin", "bin failure")),
+        ("production_summary", ("production summary", "production metrics", "wafer count", "dpw", "die per wafer")),
+        ("resort_rate", ("resort rate", "resort")),
+        ("prq_status", ("prq status", "prq", "qualification")),
     ]
 
     @classmethod
@@ -183,6 +200,203 @@ class Tools:
     def __init__(self):
         self.valves = self.Valves()
         self._mongo_client: Optional[MongoClientType] = None
+        self._productxi_client: Optional[MongoClientType] = None
+
+    # ProductXi helpers -----------------------------------------------------------------
+    def _get_productxi_client(self) -> Optional[MongoClientType]:
+        """Get or create connection to ProductXi MongoDB."""
+        if self._productxi_client is None:
+            try:
+                self._productxi_client = MongoClient(PRODUCTXI_URI)
+            except PyMongoError:
+                return None
+        return self._productxi_client
+
+    def _get_productxi_collection(self) -> Optional[MongoCollection]:
+        """Get the ProductXi_PROD collection."""
+        client = self._get_productxi_client()
+        if client is None:
+            return None
+        return client[PRODUCTXI_DATABASE][PRODUCTXI_COLLECTION]
+
+    def _product_code_to_devrevstep_prefix(self, product_code: str) -> str:
+        """Extract first 4 characters of product_code to match against devrevstep."""
+        return (product_code or "").strip().upper()[:4]
+
+    def _extract_work_week_from_question(self, question: str) -> Optional[int]:
+        """Extract a specific work week (e.g., 202542) from the question."""
+        match = re.search(r"\b(20[0-9]{2}[0-5][0-9])\b", question)
+        if match:
+            return int(match.group(1))
+        return None
+
+    def _extract_weeks_count_from_question(self, question: str) -> Optional[int]:
+        """Extract 'last N weeks' pattern from question."""
+        match = re.search(r"last\s+(\d+)\s+weeks?", question, re.IGNORECASE)
+        if match:
+            return int(match.group(1))
+        return None
+
+    def _get_current_work_week(self) -> int:
+        """Calculate current work week in YYYYWW format."""
+        now = datetime.now()
+        year = now.year
+        week = now.isocalendar()[1]
+        return year * 100 + week
+
+    def _fetch_productxi_data(
+        self,
+        product_code: str,
+        work_week: Optional[int] = None,
+        last_n_weeks: Optional[int] = None,
+    ) -> List[dict]:
+        """
+        Fetch ProductXi data for a product.
+        - If work_week specified, fetch that specific week
+        - If last_n_weeks specified, fetch the last N weeks
+        - Otherwise, fetch the latest available week
+        """
+        collection = self._get_productxi_collection()
+        if collection is None:
+            return []
+
+        devrevstep_prefix = self._product_code_to_devrevstep_prefix(product_code)
+        if not devrevstep_prefix:
+            return []
+
+        base_filter: Dict[str, Any] = {
+            "devrevstep": {"$regex": f"^{devrevstep_prefix}", "$options": "i"}
+        }
+
+        if work_week:
+            # Specific week requested
+            base_filter["Work Week"] = work_week
+            return list(collection.find(base_filter).sort("Work Week", -1))
+        elif last_n_weeks:
+            # Get the latest N weeks
+            # First find the most recent week
+            latest_doc = collection.find_one(
+                {"devrevstep": {"$regex": f"^{devrevstep_prefix}", "$options": "i"}},
+                sort=[("Work Week", -1)]
+            )
+            if not latest_doc:
+                return []
+            latest_ww = latest_doc.get("Work Week", 0)
+            # Get distinct weeks and take top N
+            all_weeks = collection.distinct(
+                "Work Week",
+                {"devrevstep": {"$regex": f"^{devrevstep_prefix}", "$options": "i"}}
+            )
+            top_weeks = sorted(all_weeks, reverse=True)[:last_n_weeks]
+            if not top_weeks:
+                return []
+            base_filter["Work Week"] = {"$in": top_weeks}
+            return list(collection.find(base_filter).sort("Work Week", -1))
+        else:
+            # Default: fetch the latest week available
+            latest_doc = collection.find_one(
+                {"devrevstep": {"$regex": f"^{devrevstep_prefix}", "$options": "i"}},
+                sort=[("Work Week", -1)]
+            )
+            if not latest_doc:
+                return []
+            latest_ww = latest_doc.get("Work Week")
+            base_filter["Work Week"] = latest_ww
+            return list(collection.find(base_filter).sort("Work Week", -1))
+
+    def _format_yield_metrics(self, rows: List[dict], product_name: str) -> str:
+        """Format yield metrics from ProductXi data."""
+        if not rows:
+            return f"❌ No yield data found for {product_name} in ProductXi."
+        
+        lines = [f"📊 Yield Metrics for {product_name}"]
+        for row in rows[:10]:  # Limit to 10 entries
+            ww = row.get("Work Week", "?")
+            sort_yield = row.get("Sort_Yield", "N/A")
+            sdt_yield = row.get("SDT_Yield", "N/A")
+            prog_type = row.get("Program Type", "?")
+            stepping = row.get("Stepping", "?")
+            lines.append(
+                f"  WW{ww} | {prog_type} | Step {stepping} | "
+                f"Sort Yield: {sort_yield}% | SDT Yield: {sdt_yield}%"
+            )
+        return "\n".join(lines)
+
+    def _format_dominant_fail(self, rows: List[dict], product_name: str) -> str:
+        """Format dominant fail information from ProductXi data."""
+        if not rows:
+            return f"❌ No dominant fail data found for {product_name} in ProductXi."
+        
+        lines = [f"🔴 Dominant Fail Analysis for {product_name}"]
+        for row in rows[:10]:
+            ww = row.get("Work Week", "?")
+            dom_fail = row.get("Dominant Fail", "N/A")
+            prog_type = row.get("Program Type", "?")
+            sdt_bingrp = row.get("SDT_BinGrp", "N/A")
+            lines.append(
+                f"  WW{ww} | {prog_type} | Dominant Fail Bin: {dom_fail} | "
+                f"SDT BinGrp (8/88/99): {sdt_bingrp}%"
+            )
+        return "\n".join(lines)
+
+    def _format_production_summary(self, rows: List[dict], product_name: str) -> str:
+        """Format production summary from ProductXi data."""
+        if not rows:
+            return f"❌ No production data found for {product_name} in ProductXi."
+        
+        lines = [f"🏭 Production Summary for {product_name}"]
+        for row in rows[:10]:
+            ww = row.get("Work Week", "?")
+            wafers = row.get("No of Wafers", "N/A")
+            dpw = row.get("Total_DPW", "N/A")
+            prog_type = row.get("Program Type", "?")
+            stepping = row.get("Stepping", "?")
+            prq = row.get("PRQ Status", "?")
+            source = row.get("Source", "?")
+            lines.append(
+                f"  WW{ww} | {prog_type} | Step {stepping} | PRQ: {prq} | "
+                f"Wafers: {wafers} | DPW: {dpw} | Source: {source}"
+            )
+        return "\n".join(lines)
+
+    def _format_resort_rate(self, rows: List[dict], product_name: str) -> str:
+        """Format resort rate information from ProductXi data."""
+        if not rows:
+            return f"❌ No resort rate data found for {product_name} in ProductXi."
+        
+        lines = [f"🔄 Resort Rate for {product_name}"]
+        for row in rows[:10]:
+            ww = row.get("Work Week", "?")
+            resort = row.get("Resort Rate", "N/A")
+            resort_flag = row.get("Resort Rate_flag", "")
+            prog_type = row.get("Program Type", "?")
+            flag_indicator = f" [{resort_flag}]" if resort_flag else ""
+            lines.append(
+                f"  WW{ww} | {prog_type} | Resort Rate: {resort}%{flag_indicator}"
+            )
+        return "\n".join(lines)
+
+    def _format_prq_status(self, rows: List[dict], product_name: str) -> str:
+        """Format PRQ status from ProductXi data."""
+        if not rows:
+            return f"❌ No PRQ status data found for {product_name} in ProductXi."
+        
+        lines = [f"✅ PRQ Status for {product_name}"]
+        # Group by PRQ status
+        prq_summary: Dict[str, List[str]] = {}
+        for row in rows:
+            prq = row.get("PRQ Status", "Unknown")
+            prog_type = row.get("Program Type", "?")
+            stepping = row.get("Stepping", "?")
+            key = f"{prog_type} Step {stepping}"
+            if prq not in prq_summary:
+                prq_summary[prq] = []
+            if key not in prq_summary[prq]:
+                prq_summary[prq].append(key)
+        
+        for prq_status, configs in prq_summary.items():
+            lines.append(f"  {prq_status}: {', '.join(configs)}")
+        return "\n".join(lines)
 
     # Utility helpers -------------------------------------------------------------------
     @staticmethod
@@ -1462,6 +1676,71 @@ class Tools:
                         title=f"ATSPEED tests for {descriptor}",
                         limit=self.valves.max_test_instance_rows,
                     )
+                )
+
+            elif classification == "yield_metrics":
+                # ProductXi: Yield metrics
+                work_week = self._extract_work_week_from_question(question)
+                last_n_weeks = self._extract_weeks_count_from_question(question)
+                xi_rows = self._fetch_productxi_data(
+                    ctx.product_code or "",
+                    work_week=work_week,
+                    last_n_weeks=last_n_weeks,
+                )
+                answer_lines.append(
+                    self._format_yield_metrics(xi_rows, ctx.product_name or ctx.product_code or "product")
+                )
+
+            elif classification == "dominant_fail":
+                # ProductXi: Dominant fail analysis
+                work_week = self._extract_work_week_from_question(question)
+                last_n_weeks = self._extract_weeks_count_from_question(question)
+                xi_rows = self._fetch_productxi_data(
+                    ctx.product_code or "",
+                    work_week=work_week,
+                    last_n_weeks=last_n_weeks,
+                )
+                answer_lines.append(
+                    self._format_dominant_fail(xi_rows, ctx.product_name or ctx.product_code or "product")
+                )
+
+            elif classification == "production_summary":
+                # ProductXi: Production summary (wafers, DPW, etc.)
+                work_week = self._extract_work_week_from_question(question)
+                last_n_weeks = self._extract_weeks_count_from_question(question)
+                xi_rows = self._fetch_productxi_data(
+                    ctx.product_code or "",
+                    work_week=work_week,
+                    last_n_weeks=last_n_weeks,
+                )
+                answer_lines.append(
+                    self._format_production_summary(xi_rows, ctx.product_name or ctx.product_code or "product")
+                )
+
+            elif classification == "resort_rate":
+                # ProductXi: Resort rate
+                work_week = self._extract_work_week_from_question(question)
+                last_n_weeks = self._extract_weeks_count_from_question(question)
+                xi_rows = self._fetch_productxi_data(
+                    ctx.product_code or "",
+                    work_week=work_week,
+                    last_n_weeks=last_n_weeks,
+                )
+                answer_lines.append(
+                    self._format_resort_rate(xi_rows, ctx.product_name or ctx.product_code or "product")
+                )
+
+            elif classification == "prq_status":
+                # ProductXi: PRQ status
+                work_week = self._extract_work_week_from_question(question)
+                last_n_weeks = self._extract_weeks_count_from_question(question)
+                xi_rows = self._fetch_productxi_data(
+                    ctx.product_code or "",
+                    work_week=work_week,
+                    last_n_weeks=last_n_weeks,
+                )
+                answer_lines.append(
+                    self._format_prq_status(xi_rows, ctx.product_name or ctx.product_code or "product")
                 )
 
             else:

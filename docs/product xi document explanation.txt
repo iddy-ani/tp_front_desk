@@ -1,0 +1,49 @@
+{
+  "_id": {
+    "$oid": "68ede953662ce155cf79b1fd"
+  },
+  "devrevstep": "88ABCVAB", // this can be used as a key to match with Products.json ProductCode, just match the first 4 characters from ProductCode to devrevstep
+  "Work Week": 202542, // this is the work week of the data by default always pull the latest week available, usually the previous week from current date. otherwise if the user specifies a week use that week instead, the user may ask for the last n weeks as well
+  "Operation": "119325", // this is the production operation code
+  "Most common Program Name": "ALPSDJXB0H93N402446", // you can ignore this field
+  "No of Wafers": 845,
+  "Process": "1273.1",
+  "Source": "F24",
+  "Prog_s": "ALP",
+  "Stepping": "B1",
+  "Program Type": "SDJ", // can be SDJ (Singulated Die Joined Socket), SDS (Singulated Die Sort (cold)), SDT (Singulated Die Test (hot))
+  "Program_Release": "934",
+  "PRQ Status": "PRQ",
+  "Product Name": "ALP",
+  "Business Unit": "PCH",
+  "Chip Type": "PCH",
+  "Sort Dev Site": "IRL",
+  "Riso": 674.18,
+  "Riso_flag": "G",
+  "Sort_Yield": 82.1, // this is the sort yield percentage
+  "Sort_Yield_flag": "G",
+  "SDT_Bin69": 0,
+  "SDT_Bin69_flag": "G",
+  "SDS_Bin69": 0,
+  "SDS_Bin69_flag": "G",
+  "SDT_Yield": 97.82, // this is the SDT yield percentage
+  "SDT_Yield_flag": "G",
+  "SDT_BinGrp": 0.17, // percentage of bins 8, 88 , 99
+  "SDT_BinGrp_flag": "G",
+  "SDT_IB43 ADTL": 0, // this is the SDT IB43 ADTL percentage
+  "SDT_IB43 ADTL_flag": "G",
+  "SDS_IB43 ADTL": 0.02, // this is the SDS IB43 ADTL percentage
+  "SDS_IB43 ADTL_flag": "G",
+  "SDS_FB2699 VADTL": 0.14, // this is the SDS FB2699 VADTL percentage
+  "SDS_FB2699 VADTL_flag": "G",
+  "Dominant Fail": 77, // this is the dominant failing bin number
+  "Total_DPW": 1194, // this is the total die per wafer
+  "Resort Rate": 4.1, // this is the resort rate percentage
+  "Resort Rate_flag": "G",
+  "SDS HVQK MAX": 97.77, // this is the SDS HVQK MAX percentage
+  "SDS HVQK MAX_flag": "G",
+  "BDTT_v_MOR": null,
+  "BDTT_v_MOR_flag": null,
+  "GDTT_v_MOR": null,
+  "GDTT_v_MOR_flag": null
+}
