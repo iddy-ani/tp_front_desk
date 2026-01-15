@@ -159,6 +159,23 @@
             ],
             "key_fields_returned": ["instance_name", "status", "bypass", "bins", "counters", "level", "timing", "plist", "scrum", "module_name", "subflow", "test_type", "voltage_domain", "corner", "frequency"],
             "canonical_tokens": ["VminTC", "ARR_ATOM", "ALL_ATOMLPC_VMIN_K_PREHVQK_TITO_VCCATOM_MIN_LFM_0800_LSA_INTM", "Kill", "Monitor", "Bypassed"]
+        },
+        "Q10": {
+            "question": "Is PantherLake CPU-U running array repair",
+            "classification": "array_repair",
+            "tool_method": "_fetch_test_rows with multi-field filter, post-filter for REPAIR_RESET exclusion, _format_detailed_tests",
+            "data_sources": ["test_instances filtered by instance_name, status, test_type, test_type_detail"],
+            "mongo_collections": ["test_instances"],
+            "query_logic": [
+                "1. Classify question as 'array_repair' via QuestionClassifier (triggers on 'array repair', 'running array', 'repair flows')",
+                "2. Build compound filter: {instance_name: {$regex: 'REPAIR'}, status: {$ne: 'Bypassed'}, test_type: 'PrimePatConfigTestMethod', test_type_detail: 'FUSECONFIG'}",
+                "3. Query test_instances with tp_document_id + filters",
+                "4. Post-filter to exclude any instance_name containing 'REPAIR_RESET'",
+                "5. If rows found: format as '✅ Yes, array repair is present with N test(s)' + detailed list",
+                "6. If no rows: format as '❌ No array repair tests found matching the criteria'"
+            ],
+            "key_fields_returned": ["instance_name", "status", "subflow", "module_name", "test_type", "test_type_detail", "level", "timing", "plist"],
+            "canonical_tokens": ["ARR_COMMON", "FUSECONFIG", "REPAIR", "PrimePatConfigTestMethod", "BEGIN", "PREHVQK", "SDTBEGIN", "SDTEND"]
         }
     },
     "collection_schema_notes": {

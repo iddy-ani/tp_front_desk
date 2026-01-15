@@ -1259,10 +1259,47 @@ class Tools:
                 answer_lines.append(self._format_setpoint_answer(ctx, matches, "Vmin"))
 
             elif classification == "array_repair":
-                modules = self._fetch_module_summary(module_collection, ctx)
-                answer_lines.append(
-                    self._format_module_focus(ctx, modules, "repair", "array repair")
+                # Q10: Filter for array repair tests per methodology:
+                # - instance_name contains 'REPAIR' but not 'REPAIR_RESET'
+                # - status != 'Bypassed'
+                # - test_type = 'PrimePatConfigTestMethod'
+                # - test_type_detail = 'FUSECONFIG'
+                filters: Dict[str, Any] = {
+                    "instance_name": {
+                        "$regex": "REPAIR",
+                        "$options": "i",
+                    },
+                    "status": {"$ne": "Bypassed"},
+                    "test_type": {"$regex": "^PrimePatConfigTestMethod$", "$options": "i"},
+                    "test_type_detail": {"$regex": "^FUSECONFIG$", "$options": "i"},
+                }
+                rows = self._fetch_test_rows(
+                    test_collection,
+                    ctx,
+                    extra_filters=filters,
+                    limit=self.valves.max_test_instance_rows,
                 )
+                # Filter out REPAIR_RESET in post-processing
+                rows = [
+                    r for r in rows
+                    if "repair_reset" not in (r.get("instance_name") or "").lower()
+                ]
+                if rows:
+                    answer_lines.append(
+                        f"✅ Yes, array repair is present with {len(rows)} test(s):"
+                    )
+                    answer_lines.append(
+                        self._format_detailed_tests(
+                            rows,
+                            title="Array repair instances (FUSECONFIG)",
+                            limit=self.valves.max_test_instance_rows,
+                        )
+                    )
+                else:
+                    answer_lines.append(
+                        "❌ No array repair tests found matching the criteria "
+                        "(REPAIR in name, not Bypassed, PrimePatConfigTestMethod, FUSECONFIG)."
+                    )
 
             elif classification == "hot_repair":
                 tests = self._sample_test_instances(test_collection, ctx)
