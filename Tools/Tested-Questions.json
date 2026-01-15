@@ -1,0 +1,184 @@
+{
+    "description": "Documents how test_program_intelligence.py programmatically answers each question from Testing-Questions.json. While Testing-Questions.json describes manual retrieval methods, this file explains the tool's automated approach using MongoDB queries and ingested data.",
+    "last_updated": "2026-01-15",
+    "questions": {
+        "Q1": {
+            "question": "What is the current test program for PantherLake CPU-U",
+            "classification": "current_tp",
+            "tool_method": "_format_current_tp_answer",
+            "data_sources": [
+                "ingest_artifacts (latest by ingested_at for matching product)",
+                "product_configs (for network_path, latest_tp metadata)"
+            ],
+            "mongo_collections": ["ingest_artifacts", "product_configs"],
+            "query_logic": [
+                "1. Extract product identifier from question using _infer_product_from_question() which fuzzy-matches 'PantherLake CPU-U' against product_configs.product_name",
+                "2. Call _resolve_context() which queries ingest_artifacts sorted by ingested_at DESC to find the latest ingest for that product",
+                "3. Return TPContext containing tp_name, git_hash, product_code, product_name, ingested_at",
+                "4. Optionally fetch product_configs document for additional metadata (network_path, latest_tp)"
+            ],
+            "key_fields_returned": ["tp_name", "git_hash", "product_code", "product_name", "ingested_at", "flow_table_names"],
+            "canonical_tokens": ["PTUSDJXA1H21J412603", "8PXM", "PantherLake CPU-U"]
+        },
+        "Q2": {
+            "question": "What tests does it have",
+            "classification": "list_tests",
+            "tool_method": "_format_test_list_answer",
+            "data_sources": [
+                "test_instances (for instance_name, module_name, status)",
+                "module_summary (for module listing)",
+                "test_instances.distinct('subflow') for flow listing"
+            ],
+            "mongo_collections": ["test_instances", "module_summary"],
+            "query_logic": [
+                "1. Use previously resolved TPContext (tp_document_id)",
+                "2. Call _list_module_names() to get distinct module_name values from module_summary collection",
+                "3. Call _list_subflows() to get distinct subflow values from test_instances collection",
+                "4. Call _sample_test_instances() to get a sample of test instances (limited by max_test_instance_rows valve)",
+                "5. Group instances by module and count by status"
+            ],
+            "key_fields_returned": ["module_name", "subflow", "instance_name", "status"],
+            "canonical_tokens": ["INIT", "BEGIN", "PREHVQK", "ARR_ATOM", "SCN_CORE"]
+        },
+        "Q3": {
+            "question": "I am interested in test for the SCN_CORE module in the PREHVQK flow.",
+            "classification": "fallback (upgraded to list_tests when module_match or flow_match detected)",
+            "tool_method": "_fetch_test_rows with extra_filters, _format_detailed_tests",
+            "data_sources": ["test_instances filtered by module_name and subflow"],
+            "mongo_collections": ["test_instances"],
+            "query_logic": [
+                "1. Use _match_catalog_token() to detect 'SCN_CORE' in the question against modules_catalog",
+                "2. Use _match_catalog_token() to detect 'PREHVQK' in the question against flows_catalog",
+                "3. Build extra_filters: {'module_name': {'$regex': 'CORE', '$options': 'i'}, 'subflow': {'$regex': 'PREHVQK', '$options': 'i'}}",
+                "4. Also filter by scrum if detectable: {'scrum': 'SCN'}",
+                "5. Query test_instances with tp_document_id + extra_filters",
+                "6. Return instance details including status, bypass, bins, level, timing, plist"
+            ],
+            "key_fields_returned": ["instance_name", "status", "bypass", "bins", "counters", "level", "timing", "plist", "scrum", "module_name", "subflow"],
+            "canonical_tokens": ["SCN_CORE", "PREHVQK", "ATSPEED_CORE0_VMIN_K_PREHVQK"]
+        },
+        "Q4": {
+            "question": "Can you provide more details on all ATSPEED tests?",
+            "classification": "atspeed_detail",
+            "tool_method": "_fetch_test_rows with instance_name regex, _format_detailed_tests",
+            "data_sources": ["test_instances filtered by instance_name containing 'ATSPEED'"],
+            "mongo_collections": ["test_instances"],
+            "query_logic": [
+                "1. Detect 'atspeed' keyword in question",
+                "2. Build filter: {'instance_name': {'$regex': 'ATSPEED', '$options': 'i'}}",
+                "3. Combine with any previously established module/flow context from conversation",
+                "4. Query test_instances with comprehensive projection including all PAS columns",
+                "5. Format as detailed table with all test attributes"
+            ],
+            "key_fields_returned": ["instance_name", "status", "bypass", "bins", "counters", "level", "timing", "plist", "monitor_pat_count", "kill_pat_count", "test_type", "voltage_domain", "corner", "frequency"],
+            "canonical_tokens": ["ATSPEED", "ATSPEED_CORE0_VMIN_K_PREHVQK"]
+        },
+        "Q5": {
+            "question": "Does PTUSDJXA1H21G402546 have VCC continuity in the flow and where",
+            "classification": "vcc_continuity",
+            "tool_method": "_fetch_test_rows with module/instance filters, _format_detailed_tests",
+            "data_sources": ["test_instances filtered for TPI_VCC module and CONT in instance_name"],
+            "mongo_collections": ["test_instances"],
+            "query_logic": [
+                "1. Extract tp_name 'PTUSDJXA1H21G402546' from question using _extract_tp_name_hint()",
+                "2. Resolve context for that specific TP revision",
+                "3. Detect 'vcc continuity' keyword → filter by scrum='TPI', module_name containing 'VCC'",
+                "4. Additional filter: instance_name contains 'CONT'",
+                "5. Query test_instances and group by subflow to show where VCC continuity tests appear"
+            ],
+            "key_fields_returned": ["instance_name", "subflow", "status", "module_name"],
+            "canonical_tokens": ["TPI_VCC", "CONT_ALL_DC", "START", "FINAL", "SDTSTART"]
+        },
+        "Q6": {
+            "question": "What does it look like",
+            "classification": "tp_snapshot",
+            "tool_method": "_format_snapshot",
+            "data_sources": [
+                "module_summary (top modules by total_tests)",
+                "artifacts (category counts)",
+                "test_instances (representative sample)"
+            ],
+            "mongo_collections": ["module_summary", "artifacts", "test_instances"],
+            "query_logic": [
+                "1. Use current TPContext from conversation",
+                "2. Call _fetch_module_summary() to get all modules with test counts and kill percentages",
+                "3. Sort modules by total_tests DESC, take top 5",
+                "4. Call _fetch_artifact_summary() to get artifact category counts via aggregation pipeline",
+                "5. Optionally sample test_instances for structure illustration"
+            ],
+            "key_fields_returned": ["module_name", "total_tests", "total_kill", "percent_kill", "artifact_category", "artifact_count"],
+            "canonical_tokens": ["Top modules", "Artifacts"]
+        },
+        "Q7": {
+            "question": "Does PTUSDJXA1H21G402546 have a HVQK water fall flow",
+            "classification": "hvqk_flow",
+            "tool_method": "_fetch_hvqk_module_inventory, _format_hvqk_listing",
+            "data_sources": ["hvqk_configs collection (ingested from Modules/*/InputFiles/*.hvqk.config.json)"],
+            "mongo_collections": ["hvqk_configs"],
+            "query_logic": [
+                "1. Extract tp_name from question using _extract_tp_name_hint()",
+                "2. Resolve TPContext for that revision",
+                "3. Call _fetch_hvqk_module_inventory() which runs aggregation: group by module_name, collect file_name into 'files' array",
+                "4. Pipeline: $match tp_document_id → $group _id=module_name, files=$addToSet file_name → $sort _id",
+                "5. Format as module-grouped listing of HVQK config files"
+            ],
+            "key_fields_returned": ["module_name", "file_name", "count"],
+            "canonical_tokens": ["HVQK waterfall", "ARR_ATOM", "atom_hp_cache_all_stress.hvqk.config.json"]
+        },
+        "Q8": {
+            "question": "What does the ARR_ATOM HVQK waterfall look like?",
+            "classification": "hvqk_flow (with module_match)",
+            "tool_method": "_fetch_hvqk_configs with module_name filter, _format_hvqk_module_detail",
+            "data_sources": ["hvqk_configs collection filtered by module_name"],
+            "mongo_collections": ["hvqk_configs"],
+            "query_logic": [
+                "1. Detect 'ARR_ATOM' in question via _match_catalog_token() against modules_catalog",
+                "2. Use current TPContext (or resolve from question)",
+                "3. Call _fetch_hvqk_configs(ctx, module_name='ARR_ATOM')",
+                "4. Query: {tp_document_id: ..., module_name: {'$regex': 'ARR_ATOM', '$options': 'i'}}",
+                "5. For each config document, extract key fields: DomainName, InstanceName, VoltageStart, VoltageStop, Pin, VoltageSteps",
+                "6. Format detailed config table using _format_hvqk_module_detail()"
+            ],
+            "key_fields_returned": ["file_name", "config.DomainName", "config.InstanceName", "config.VoltageStart", "config.VoltageStop", "config.Pin", "config.VoltageSteps"],
+            "canonical_tokens": ["ARR_ATOM", "ATOMHP", "ATOMLP", "CACHE_ATOM_HP", "VCCIA_HC", "atom_hp_cache_all_stress.hvqk.config.json"]
+        }
+    },
+    "collection_schema_notes": {
+        "ingest_artifacts": {
+            "description": "Top-level ingest document per TP revision",
+            "key_fields": ["_id (tp_document_id)", "tp_name", "git_hash", "ingested_at", "metadata.product_code", "metadata.product_name"]
+        },
+        "test_instances": {
+            "description": "One document per test instance from PASReport.csv",
+            "key_fields": ["tp_document_id", "instance_name", "status", "bypass", "bins", "counters", "level", "timing", "plist", "scrum", "module_name", "subflow", "test_type", "voltage_domain", "corner", "frequency"]
+        },
+        "module_summary": {
+            "description": "Aggregated stats per module from PASReport_ModuleSummary.csv",
+            "key_fields": ["tp_document_id", "module_name", "total_tests", "total_kill", "percent_kill", "run_rate", "bypass_rate"]
+        },
+        "hvqk_configs": {
+            "description": "HVQK waterfall config JSON files from Modules/*/InputFiles/*.hvqk.config.json",
+            "key_fields": ["tp_document_id", "module_name", "file_name", "relative_path", "config"]
+        },
+        "flow_map": {
+            "description": "Test execution sequence from flow map parsing",
+            "key_fields": ["tp_document_id", "module", "dutflow", "instance", "sequence_index"]
+        },
+        "product_configs": {
+            "description": "Product catalog from Products.json",
+            "key_fields": ["product_code", "product_name", "network_path", "latest_tp"]
+        }
+    },
+    "classification_keywords": {
+        "current_tp": ["current test program", "latest tp", "current tp"],
+        "list_tests": ["what tests", "list of tests", "tests does it have"],
+        "hvqk_flow": ["hvqk", "water fall", "waterfall"],
+        "atspeed_detail": ["atspeed"],
+        "tp_snapshot": ["what does it look like", "overview", "snapshot"],
+        "vcc_continuity": ["vcc continuity", "continuity"],
+        "setpoints": ["vMintc", "settings", "test class"],
+        "array_repair": ["array repair", "running array", "repair flows"],
+        "hot_repair": ["hot repair", "hot-repair", "hotrepair"],
+        "sdt_flow": ["sdt flow", "sdt content"]
+    }
+}
