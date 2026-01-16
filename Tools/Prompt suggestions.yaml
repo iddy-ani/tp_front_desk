@@ -1,0 +1,24 @@
+What is the latest test program for {{ product-name }}?
+What tests does the latest test program for {{ product-name }} have?
+Does {{ test-program }} have a HVQK water fall flow?
+What does the {{ module-name }} HVQK waterfall look like on {{ product-name }}?
+Does {{ test-program }} have VCC continuity in the flow and where?
+What does the VCC continuity in the flow look like on {{ product-name }}?
+What are the settings of the test class VminTC throughout the latest {{ product-name }} test program?
+Is {{ product-name }} running array repair?
+Is {{ product-name }} running hot array repair?
+Is there much content in the SDT flow of {{ product-name }}?
+I am interested in test for the {{ module-name }} module in the {{ flow-name }} flow?
+Can you provide more details on all ATSPEED tests?
+What program did {{ test-instance }} patlist change last?
+What program did {{ test-instance }} Levels change last?
+What is the yield for {{ product-name }}?
+Show me the SDT yield for {{ product-name }} for the last {{ num_weeks }} weeks?
+What is the sort yield trend for {{ product-name }}?
+What is the dominant fail for {{ product-name }}?
+What are the top failing bins for {{ product-name }} for the last {{ num_weeks }} weeks?
+What is the production volume for {{ product-name }}?
+How many wafers were processed for {{ product-name }} last week?
+What is the DPW for {{ product-name }}?
+What is the resort rate for {{ product-name }}?
+What is the PRQ status for {{ product-name }}?
