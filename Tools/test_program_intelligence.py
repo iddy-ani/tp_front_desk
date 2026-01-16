@@ -158,6 +158,8 @@ class QuestionClassifier:
         ("hot_repair", ("hot array repair", "hot repair", "hot-repair", "hotrepair")),
         ("array_repair", ("array repair", "running array", "repair flows")),
         ("sdt_flow", ("sdt flow", "sdt content")),
+        # Field change history - when did a field like plist, level, timing change
+        ("field_change_history", ("change last", "changed last", "last change", "when did", "what program did")),
         # ProductXi production metrics classifications
         ("yield_metrics", ("yield", "sort yield", "sdt yield", "production yield")),
         ("dominant_fail", ("dominant fail", "top fail", "failing bins", "failing bin", "bin failure")),
@@ -651,6 +653,179 @@ class Tools:
         if match:
             return match.group(1)
         return None
+
+    # Known field names that can be tracked for changes
+    TRACKABLE_FIELDS: Dict[str, List[str]] = {
+        "plist": ["plist", "patlist", "pattern list"],
+        "level": ["level", "levels"],
+        "timing": ["timing", "timings"],
+        "bins": ["bin", "bins"],
+        "status": ["status"],
+        "bypass": ["bypass"],
+    }
+
+    def _extract_field_from_question(self, question: str) -> Optional[str]:
+        """Extract a field name (plist, level, timing, etc.) from the question."""
+        normalized = question.lower()
+        for field_key, aliases in self.TRACKABLE_FIELDS.items():
+            for alias in aliases:
+                if alias in normalized:
+                    return field_key
+        return None
+
+    def _extract_test_instance_from_question(
+        self, question: str, modules_catalog: List[str]
+    ) -> Optional[str]:
+        """Extract a test instance name from the question.
+        
+        Looks for patterns like:
+        - ARR_CCF::XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL
+        - ARR_CCF XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL
+        - Just the test name: XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL
+        """
+        # Pattern 1: Module::TestName format
+        match = re.search(
+            r"([A-Z]{2,10}_[A-Z0-9_]+)::([A-Z][A-Z0-9_]+)",
+            question,
+            re.IGNORECASE,
+        )
+        if match:
+            return f"{match.group(1).upper()}::{match.group(2).upper()}"
+        
+        # Pattern 2: Module TestName format (space separated, module in catalog)
+        for module in modules_catalog:
+            pattern = rf"\b{re.escape(module)}\s+([A-Z][A-Z0-9_]{{10,}})\b"
+            match = re.search(pattern, question, re.IGNORECASE)
+            if match:
+                return f"{module.upper()}::{match.group(1).upper()}"
+        
+        # Pattern 3: Just a long test name (likely starts with XSA_, ALL_, etc.)
+        match = re.search(
+            r"\b((?:XSA|ALL|SSA)_[A-Z0-9_]{15,})\b",
+            question,
+            re.IGNORECASE,
+        )
+        if match:
+            return match.group(1).upper()
+        
+        return None
+
+    def _trace_field_change_history(
+        self,
+        ingest_collection: MongoCollection,
+        test_collection: MongoCollection,
+        product_code: str,
+        instance_pattern: str,
+        field_name: str,
+        max_history: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """Trace the history of a field value across TPs.
+        
+        Returns a list of dicts with:
+        - tp_name: The TP revision
+        - ingested_at: When it was ingested
+        - field_value: The value of the field in that TP
+        - changed: True if value changed from previous TP
+        """
+        # Get all TPs for this product, sorted by ingested_at DESC (newest first)
+        tp_query = {
+            "$or": [
+                {"product.product_code": product_code},
+                {"metadata.product_code": product_code},
+            ]
+        }
+        tp_cursor = ingest_collection.find(
+            tp_query, {"_id": 1, "tp_name": 1, "ingested_at": 1}
+        ).sort("ingested_at", -1).limit(max_history)
+        
+        tps = list(tp_cursor)
+        if not tps:
+            return []
+        
+        history: List[Dict[str, Any]] = []
+        previous_value: Optional[str] = None
+        
+        for tp_doc in tps:
+            tp_id = tp_doc["_id"]
+            tp_name = tp_doc.get("tp_name", "unknown")
+            ingested_at = tp_doc.get("ingested_at")
+            
+            # Find the test instance in this TP
+            instance_query = {
+                "tp_document_id": tp_id,
+                "instance_name": {"$regex": instance_pattern, "$options": "i"},
+            }
+            test_doc = test_collection.find_one(instance_query, {field_name: 1, "instance_name": 1})
+            
+            if not test_doc:
+                # Test doesn't exist in this TP
+                continue
+            
+            field_value = (test_doc.get(field_name) or "").strip() or "(empty)"
+            changed = previous_value is not None and field_value != previous_value
+            
+            history.append({
+                "tp_name": tp_name,
+                "ingested_at": ingested_at,
+                "field_value": field_value,
+                "changed": changed,
+                "instance_name": test_doc.get("instance_name", ""),
+            })
+            
+            previous_value = field_value
+        
+        return history
+
+    def _format_field_change_history(
+        self,
+        history: List[Dict[str, Any]],
+        instance_name: str,
+        field_name: str,
+    ) -> str:
+        """Format the field change history for display."""
+        if not history:
+            return f"❌ Could not find test instance matching '{instance_name}' in any ingested TPs."
+        
+        # Find the most recent change
+        current_value = history[0]["field_value"] if history else "(unknown)"
+        current_tp = history[0]["tp_name"] if history else "(unknown)"
+        
+        # Find when the field last changed
+        change_tp = None
+        previous_value = None
+        for entry in history:
+            if entry.get("changed"):
+                change_tp = entry["tp_name"]
+                # The previous value is what it changed TO in this TP
+                # We need to find what it was before
+                idx = history.index(entry)
+                if idx + 1 < len(history):
+                    previous_value = history[idx + 1]["field_value"]
+                break
+        
+        lines = [f"📜 **{field_name.upper()} Change History** for `{instance_name}`\n"]
+        lines.append(f"**Current TP:** {current_tp}")
+        lines.append(f"**Current {field_name}:** `{current_value}`\n")
+        
+        if change_tp:
+            lines.append(f"**Last changed in:** {change_tp}")
+            if previous_value:
+                lines.append(f"**Previous {field_name}:** `{previous_value}`")
+        else:
+            lines.append(f"**No changes detected** in the last {len(history)} TPs scanned.")
+        
+        # Show recent history
+        lines.append(f"\n**Recent History** (newest first):")
+        for entry in history[:10]:
+            marker = "🔄" if entry.get("changed") else "  "
+            tp = entry["tp_name"]
+            val = entry["field_value"]
+            lines.append(f"{marker} {tp}: `{val}`")
+        
+        if len(history) > 10:
+            lines.append(f"  ... and {len(history) - 10} more TPs scanned")
+        
+        return "\n".join(lines)
 
     def _normalize_identifiers(
         self,
@@ -1902,6 +2077,43 @@ class Tools:
                 else:
                     answer_lines.append(
                         "❌ No SDT flow content found (no tests with SubFlow containing 'SDT')."
+                    )
+
+            elif classification == "field_change_history":
+                # Q13: Track when a field (plist, level, timing) last changed for a test instance
+                field_name = self._extract_field_from_question(question)
+                instance_name = self._extract_test_instance_from_question(question, modules_catalog)
+                
+                if not instance_name:
+                    answer_lines.append(
+                        "❌ Could not identify a test instance name in your question.\n"
+                        "Please include the full test name, e.g.:\n"
+                        "- `ARR_CCF::XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL`\n"
+                        "- or just `XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL`"
+                    )
+                elif not field_name:
+                    # Default to plist if no field specified
+                    field_name = "plist"
+                    history = self._trace_field_change_history(
+                        ingest_collection,
+                        test_collection,
+                        ctx.product_code or "",
+                        instance_name,
+                        field_name,
+                    )
+                    answer_lines.append(
+                        self._format_field_change_history(history, instance_name, field_name)
+                    )
+                else:
+                    history = self._trace_field_change_history(
+                        ingest_collection,
+                        test_collection,
+                        ctx.product_code or "",
+                        instance_name,
+                        field_name,
+                    )
+                    answer_lines.append(
+                        self._format_field_change_history(history, instance_name, field_name)
                     )
 
             elif classification == "module_flow_tests":
