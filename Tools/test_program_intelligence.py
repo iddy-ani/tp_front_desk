@@ -1325,28 +1325,63 @@ class Tools:
         )
         classification = QuestionClassifier.classify(question)
 
-        try:
-            ctx = self._resolve_context(
-                ingest_collection,
-                product_collection,
-                product_code,
-                tp_name,
-                question=question,
+        # ProductXi classifications don't require a full TP context, just product info
+        productxi_classifications = {
+            "yield_metrics", "dominant_fail", "production_summary", 
+            "resort_rate", "prq_status"
+        }
+        
+        ctx: Optional[TPContext] = None
+        if classification in productxi_classifications:
+            # For ProductXi queries, we only need product_code and product_name
+            # Try to get product info without requiring an ingested TP
+            if not product_code:
+                # Try fuzzy match to get product info
+                fuzzy_match = self._infer_product_from_question(product_collection, question)
+                if fuzzy_match:
+                    product_code = fuzzy_match.get("product_code", "")
+                    product_name = fuzzy_match.get("product_name", "")
+                else:
+                    await emitter.error("Could not determine product from question. Please specify a product name.")
+                    return "Could not determine product from question. Please specify a product name like 'PantherLake CPU-U'."
+            else:
+                # Look up product name from product_code
+                product_doc = product_collection.find_one({"product_code": product_code})
+                product_name = product_doc.get("product_name", "") if product_doc else ""
+            
+            # Create a minimal context for ProductXi queries
+            ctx = TPContext(
+                tp_document_id="",
+                tp_name="",
+                git_hash="",
+                product_code=product_code,
+                product_name=product_name,
+                ingested_at=None,
+                metadata={},
             )
-        except self.ContextResolutionError as exc:
-            suggestion_lines = (
-                "\n".join(f"- {label}" for label in exc.suggestions)
-                if exc.suggestions
-                else ""
-            )
-            guidance = str(exc)
-            if suggestion_lines:
-                guidance = f"{guidance}\nTry one of these products next time:\n{suggestion_lines}"
-            await emitter.error(guidance)
-            return guidance
-        except ValueError as exc:
-            await emitter.error(str(exc))
-            return str(exc)
+        else:
+            try:
+                ctx = self._resolve_context(
+                    ingest_collection,
+                    product_collection,
+                    product_code,
+                    tp_name,
+                    question=question,
+                )
+            except self.ContextResolutionError as exc:
+                suggestion_lines = (
+                    "\n".join(f"- {label}" for label in exc.suggestions)
+                    if exc.suggestions
+                    else ""
+                )
+                guidance = str(exc)
+                if suggestion_lines:
+                    guidance = f"{guidance}\nTry one of these products next time:\n{suggestion_lines}"
+                await emitter.error(guidance)
+                return guidance
+            except ValueError as exc:
+                await emitter.error(str(exc))
+                return str(exc)
 
         await emitter.progress(
             f"Resolved context: {ctx.tp_name} ({ctx.product_code or 'unknown product'})"
