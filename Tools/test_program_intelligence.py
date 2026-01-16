@@ -698,24 +698,69 @@ class Tools:
         self,
         product_collection: MongoCollection,
         question: str,
+        min_token_overlap: int = 2,
     ) -> Optional[dict]:
+        """Infer product from question text.
+        
+        Args:
+            product_collection: MongoDB collection of product configs
+            question: The user's question text
+            min_token_overlap: Minimum number of matching tokens required for fuzzy match
+                              (exact substring matches and unique identifiers bypass this)
+        """
         if not question.strip():
             return None
         normalized = question.lower()
+        question_tokens = set(self._tokenize(question))
         candidates: List[Tuple[int, dict]] = []
-        for row in product_collection.find({}, {"product_code": 1, "product_name": 1}):
+        all_products = list(product_collection.find({}, {"product_code": 1, "product_name": 1}))
+        
+        for row in all_products:
+            name = (row.get("product_name") or "").strip()
+            code = (row.get("product_code") or "").strip()
+            if not name:
+                continue
+            # Exact substring match - high confidence
+            if name.lower() in normalized:
+                return row
+            # Also check if product code appears in question
+            if code and code.lower() in normalized:
+                return row
+            
+        # Fuzzy token matching
+        for row in all_products:
             name = (row.get("product_name") or "").strip()
             if not name:
                 continue
-            if name.lower() in normalized:
-                return row
             name_tokens = set(self._tokenize(name))
-            question_tokens = set(self._tokenize(question))
             if not name_tokens or not question_tokens:
                 continue
-            overlap = len(name_tokens & question_tokens)
-            if overlap:
-                candidates.append((overlap, row))
+            overlap = name_tokens & question_tokens
+            overlap_count = len(overlap)
+            
+            if overlap_count >= min_token_overlap:
+                # Standard fuzzy match with enough overlap
+                candidates.append((overlap_count, row))
+            elif overlap_count == 1:
+                # Single token match - only accept if it's a distinctive identifier
+                # Check if this token uniquely identifies this product
+                matching_token = list(overlap)[0]
+                # Skip common words like "cpu", "u", etc.
+                if len(matching_token) <= 2 or matching_token in {"cpu", "gpu", "soc", "test", "program"}:
+                    continue
+                # Check if this token appears in other product names
+                is_unique = True
+                for other_row in all_products:
+                    if other_row["_id"] == row["_id"]:
+                        continue
+                    other_name = (other_row.get("product_name") or "").strip()
+                    other_tokens = set(self._tokenize(other_name))
+                    if matching_token in other_tokens:
+                        is_unique = False
+                        break
+                if is_unique:
+                    candidates.append((overlap_count, row))
+                    
         if not candidates:
             return None
         candidates.sort(key=lambda item: item[0], reverse=True)
@@ -1486,6 +1531,31 @@ class Tools:
 
         ingest_collection = self._get_collection(client, INGEST_COLLECTION)
         product_collection = self._get_collection(client, PRODUCT_COLLECTION)
+        
+        # Early validation: Check if we can identify a product from the question
+        # If no product_code or tp_name provided, try to infer from question
+        inferred_product = None
+        if not product_code and not tp_name:
+            inferred_product = self._infer_product_from_question(product_collection, question)
+            # Also check if there's a TP name in the question
+            tp_hint = self._extract_tp_name_hint(question)
+            if not inferred_product and not tp_hint:
+                # Cannot identify what product/TP the user is asking about
+                suggestions = self._candidate_product_suggestions(product_collection, question, limit=6)
+                if not suggestions:
+                    suggestions = self._candidate_product_suggestions(product_collection, "", limit=6)
+                suggestion_list = "\n".join(f"- {s}" for s in suggestions)
+                error_msg = (
+                    "I couldn't determine which product or test program you're asking about.\n\n"
+                    "Please include one of the following in your question:\n"
+                    "- A **product name** (e.g., 'PantherLake CPU-U')\n"
+                    "- A **product code** (e.g., '8PXM')\n"
+                    "- A **test program name** (e.g., 'PTUSDJXA1H21J412603')\n\n"
+                    f"Available products:\n{suggestion_list}"
+                )
+                await emitter.error(error_msg)
+                return error_msg
+        
         product_code, tp_name = self._normalize_identifiers(
             product_collection,
             question,
