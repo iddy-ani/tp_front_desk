@@ -15,7 +15,7 @@ import os
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import (
     Any,
     Callable,
@@ -29,6 +29,13 @@ from typing import (
 )
 
 from pymongo import MongoClient
+
+try:
+    from bson import ObjectId  # type: ignore
+    from bson.decimal128 import Decimal128  # type: ignore
+except Exception:  # pragma: no cover
+    ObjectId = None  # type: ignore
+    Decimal128 = None  # type: ignore
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection as MongoCollection
@@ -76,6 +83,25 @@ HVQK_COLLECTION = "hvqk_configs"
 def _safe_getenv(key: str, default: str = "") -> str:
     value = os.environ.get(key)
     return value if value is not None else default
+
+
+def _json_default(value: Any) -> Any:
+    """Best-effort JSON encoder for common Mongo/PyMongo types."""
+    if ObjectId is not None and isinstance(value, ObjectId):
+        return str(value)
+    if Decimal128 is not None and isinstance(value, Decimal128):
+        return str(value)
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, (set, tuple)):
+        return list(value)
+    if isinstance(value, bytes):
+        try:
+            return value.decode("utf-8")
+        except Exception:
+            return value.hex()
+    # Fall back to string representation to avoid hard crashes in tools.
+    return str(value)
 
 
 class EventEmitter:
@@ -160,6 +186,20 @@ class QuestionClassifier:
 
 
 class Tools:
+    # Open WebUI discovers tool functions by iterating over dir(tool_instance)
+    # and selecting callables. This tool has many internal helpers (prefixed with
+    # an underscore) that should never be exposed as user-callable tools.
+    _PUBLIC_TOOL_METHODS: Tuple[str, ...] = (
+        "answer_tp_question",
+        "fetch_productxi_data_json",
+    )
+
+    def __dir__(self) -> List[str]:  # type: ignore[override]
+        names = object.__dir__(self)
+        allowed = set(self._PUBLIC_TOOL_METHODS)
+        # Keep dunder names for normal Python introspection; Open WebUI filters them anyway.
+        return sorted([name for name in names if name in allowed or name.startswith("__")])
+
     class Valves(BaseModel):
         max_test_instance_rows: int = Field(
             default=250,
@@ -237,6 +277,30 @@ class Tools:
             return int(match.group(1))
         return None
 
+    def _extract_relative_work_week_from_question(self, question: str) -> Optional[int]:
+        """Handle common relative time phrases like 'last week' or 'this week'."""
+        normalized = (question or "").strip().lower()
+        if not normalized:
+            return None
+
+        # "this week" => current ISO week
+        if re.search(r"\b(this\s+week|current\s+week)\b", normalized):
+            return self._get_current_work_week()
+
+        # "last week" => previous ISO week
+        if re.search(r"\b(last\s+week|previous\s+week|prior\s+week)\b", normalized):
+            dt = datetime.now() - timedelta(days=7)
+            year = dt.year
+            week = dt.isocalendar()[1]
+            return year * 100 + week
+
+        return None
+
+    @staticmethod
+    def _looks_like_trend_question(question: str) -> bool:
+        normalized = (question or "").lower()
+        return any(token in normalized for token in ("trend", "over time", "history", "historical"))
+
     def _get_current_work_week(self) -> int:
         """Calculate current work week in YYYYWW format."""
         now = datetime.now()
@@ -244,7 +308,7 @@ class Tools:
         week = now.isocalendar()[1]
         return year * 100 + week
 
-    def _fetch_productxi_data(
+    def fetch_productxi_data(
         self,
         product_code: str,
         work_week: Optional[int] = None,
@@ -256,6 +320,14 @@ class Tools:
         - If last_n_weeks specified, fetch the last N weeks
         - Otherwise, fetch the latest available week
         """
+
+        # Allow callers to pass a product name like "PantherLake CPU-U".
+        # ProductXi expects a product code prefix (e.g., 8PXM) in devrevstep.
+        if product_code and not self._looks_like_product_code(product_code):
+            resolved_code, _resolved_name = self._resolve_product_code_from_label(product_code)
+            if resolved_code:
+                product_code = resolved_code
+
         collection = self._get_productxi_collection()
         if collection is None:
             return []
@@ -303,6 +375,103 @@ class Tools:
             latest_ww = latest_doc.get("Work Week")
             base_filter["Work Week"] = latest_ww
             return list(collection.find(base_filter).sort("Work Week", -1))
+
+    def _resolve_product_code_from_label(self, product_label: str) -> Tuple[str, str]:
+        """Resolve a human product label/name to a ProductXi-compatible product code.
+
+        Returns (product_code, product_name). If resolution fails, returns ("", "").
+        """
+
+        label = (product_label or "").strip()
+        if not label:
+            return "", ""
+
+        # If caller already provided a product code (e.g., 8PXM), keep it.
+        if self._looks_like_product_code(label):
+            return label.upper(), label.upper()
+
+        # Best-effort: look up product_configs by product_name.
+        try:
+            client = self._get_mongo_client(None)
+            if client is None:
+                return "", ""
+            product_collection = self._get_collection(client, PRODUCT_COLLECTION)
+
+            # Prefer exact-ish contains match.
+            regex = {"$regex": re.escape(label), "$options": "i"}
+            doc = product_collection.find_one({"product_name": regex})
+            if not doc:
+                # Fallback: try matching against product_code field too.
+                doc = product_collection.find_one({"product_code": regex})
+            if not doc:
+                return "", ""
+
+            code = (doc.get("product_code") or "").strip().upper()
+            name = (doc.get("product_name") or "").strip()
+            return (code if self._looks_like_product_code(code) else ""), name
+        except Exception:
+            return "", ""
+
+    async def fetch_productxi_data_json(
+        self,
+        product: str,
+        last_n_weeks: Optional[int] = None,
+        work_week: Optional[int] = None,
+        __event_emitter__: Optional[Callable[[dict], Any]] = None,
+        __user__: Optional[dict] = None,
+    ) -> str:
+        """Fetch raw ProductXi rows for a product.
+
+        This is a convenience wrapper so callers can pass a product name like
+        "PantherLake CPU-U" and still get results (we resolve it to the product
+        code used in ProductXi, e.g. 8PXM).
+        """
+
+        emitter = EventEmitter(__event_emitter__)
+        await emitter.progress("Resolving product identifier...")
+
+        resolved_code, resolved_name = self._resolve_product_code_from_label(product)
+        if not resolved_code:
+            await emitter.error(
+                "Could not resolve product to a product code. Provide a product code (e.g., 8PXM) or a known product name."
+            )
+            return json.dumps(
+                {
+                    "error": "Could not resolve product",
+                    "product": product,
+                    "results": [],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+
+        # Support relative phrases when callers use this tool directly.
+        if work_week is None and last_n_weeks is None:
+            # If they didn't pass anything, default to latest.
+            pass
+
+        await emitter.progress(f"Fetching ProductXi rows for {resolved_name or resolved_code}...")
+        rows = self.fetch_productxi_data(
+            resolved_code,
+            work_week=work_week,
+            last_n_weeks=last_n_weeks,
+        )
+        await emitter.success("ProductXi query complete")
+        return json.dumps(
+            {
+                "product": product,
+                "resolved": {
+                    "product_code": resolved_code,
+                    "product_name": resolved_name,
+                },
+                "work_week": work_week,
+                "last_n_weeks": last_n_weeks,
+                "results": rows,
+            },
+            ensure_ascii=False,
+            default=_json_default,
+            indent=2,
+        )
 
     def _format_yield_metrics(self, rows: List[dict], product_name: str) -> str:
         """Format yield metrics from ProductXi data."""
@@ -1717,7 +1886,13 @@ class Tools:
                 # ProductXi: Yield metrics
                 work_week = self._extract_work_week_from_question(question)
                 last_n_weeks = self._extract_weeks_count_from_question(question)
-                xi_rows = self._fetch_productxi_data(
+                if work_week is None:
+                    work_week = self._extract_relative_work_week_from_question(question)
+                if work_week is None and last_n_weeks is None and self._looks_like_trend_question(question):
+                    # If the user asks for a trend without specifying a time window,
+                    # default to a reasonable multi-week view.
+                    last_n_weeks = 8
+                xi_rows = self.fetch_productxi_data(
                     ctx.product_code or "",
                     work_week=work_week,
                     last_n_weeks=last_n_weeks,
@@ -1730,7 +1905,9 @@ class Tools:
                 # ProductXi: Dominant fail analysis
                 work_week = self._extract_work_week_from_question(question)
                 last_n_weeks = self._extract_weeks_count_from_question(question)
-                xi_rows = self._fetch_productxi_data(
+                if work_week is None:
+                    work_week = self._extract_relative_work_week_from_question(question)
+                xi_rows = self.fetch_productxi_data(
                     ctx.product_code or "",
                     work_week=work_week,
                     last_n_weeks=last_n_weeks,
@@ -1743,7 +1920,9 @@ class Tools:
                 # ProductXi: Production summary (wafers, DPW, etc.)
                 work_week = self._extract_work_week_from_question(question)
                 last_n_weeks = self._extract_weeks_count_from_question(question)
-                xi_rows = self._fetch_productxi_data(
+                if work_week is None:
+                    work_week = self._extract_relative_work_week_from_question(question)
+                xi_rows = self.fetch_productxi_data(
                     ctx.product_code or "",
                     work_week=work_week,
                     last_n_weeks=last_n_weeks,
@@ -1756,7 +1935,9 @@ class Tools:
                 # ProductXi: Resort rate
                 work_week = self._extract_work_week_from_question(question)
                 last_n_weeks = self._extract_weeks_count_from_question(question)
-                xi_rows = self._fetch_productxi_data(
+                if work_week is None:
+                    work_week = self._extract_relative_work_week_from_question(question)
+                xi_rows = self.fetch_productxi_data(
                     ctx.product_code or "",
                     work_week=work_week,
                     last_n_weeks=last_n_weeks,
@@ -1769,7 +1950,9 @@ class Tools:
                 # ProductXi: PRQ status
                 work_week = self._extract_work_week_from_question(question)
                 last_n_weeks = self._extract_weeks_count_from_question(question)
-                xi_rows = self._fetch_productxi_data(
+                if work_week is None:
+                    work_week = self._extract_relative_work_week_from_question(question)
+                xi_rows = self.fetch_productxi_data(
                     ctx.product_code or "",
                     work_week=work_week,
                     last_n_weeks=last_n_weeks,
