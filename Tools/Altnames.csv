@@ -1,0 +1,28 @@
+Column Name, Altnames, Altnames, Altnames
+InstanceName, Instance name, Test name, test instance
+STATUS, status
+Bins, bin
+Counters, counter
+LEVEL, levels
+TIMING, timings
+PLIST, patlist, pattern list
+MonitorPatCount, monitor pattern count
+KILLPatCount, Kill Pattern count
+SkippedPatCount, Skipped pattern count
+Content Directory, pattern directory
+PatternVREV, pattern revison
+TestType, test method, test class
+TpOptions,
+Scrum, Module Name (Scrum+ModuleName)
+ModuleName, Module Name (Scrum+ModuleName)
+ModuleUser,
+TestCategory, Test category
+Partition,
+TestType, test type (repeated but valules differ what to do?)
+TestTypeFlag, 
+SubFlow,
+PatternRatio,
+VoltageDomain,
+Corner,
+Frequency,
+InstanceUser,

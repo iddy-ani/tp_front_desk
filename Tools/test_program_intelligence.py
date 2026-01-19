@@ -159,7 +159,11 @@ class QuestionClassifier:
         ("array_repair", ("array repair", "running array", "repair flows")),
         ("sdt_flow", ("sdt flow", "sdt content")),
         # Attribute change history - when did X change last
-        ("attribute_change", ("change last", "changed last", "last change", "when did", "what program did")),
+        ("attribute_change", ("change last", "changed last", "last change", "when did", "what program did", "when was", "updated last")),
+        # Test instance details - get parameters/attributes of a specific test
+        ("test_details", ("parameters for", "details of", "attributes of", "show me test", "what is the")),
+        # Filter tests by attribute value
+        ("filter_tests", ("list tests with", "tests with", "tests where", "tests that have", "tests set to", "show tests with", "find tests with")),
         # ProductXi production metrics classifications
         ("yield_metrics", ("yield", "sort yield", "sdt yield", "production yield")),
         ("dominant_fail", ("dominant fail", "top fail", "failing bins", "failing bin", "bin failure")),
@@ -655,38 +659,118 @@ class Tools:
         return None
 
     # Known trackable attributes for change history queries
-    TRACKABLE_ATTRIBUTES: Tuple[str, ...] = (
-        "plist", "patlist", "level", "levels", "timing", "timings",
-        "bins", "status", "bypass", "test_type", "voltage_domain",
-        "corner", "frequency",
-    )
+    # Maps user-friendly names (from Altnames.csv) to canonical MongoDB field names
+    FIELD_ALIASES: Dict[str, str] = {
+        # InstanceName aliases
+        "instance name": "instance_name",
+        "instancename": "instance_name",
+        "test name": "instance_name",
+        "test instance": "instance_name",
+        # STATUS aliases
+        "status": "status",
+        # Bins aliases
+        "bins": "bins",
+        "bin": "bins",
+        # Counters aliases
+        "counters": "counters",
+        "counter": "counters",
+        # LEVEL aliases
+        "level": "level",
+        "levels": "level",
+        # TIMING aliases
+        "timing": "timing",
+        "timings": "timing",
+        # PLIST aliases
+        "plist": "plist",
+        "patlist": "plist",
+        "pattern list": "plist",
+        # MonitorPatCount aliases
+        "monitorpatcount": "monitor_pat_count",
+        "monitor pattern count": "monitor_pat_count",
+        "monitor pat count": "monitor_pat_count",
+        # KILLPatCount aliases
+        "killpatcount": "kill_pat_count",
+        "kill pattern count": "kill_pat_count",
+        "kill pat count": "kill_pat_count",
+        # SkippedPatCount aliases
+        "skippedpatcount": "skipped_pat_count",
+        "skipped pattern count": "skipped_pat_count",
+        "skipped pat count": "skipped_pat_count",
+        # Content Directory aliases
+        "content directory": "content_directory",
+        "pattern directory": "content_directory",
+        "contentdirectory": "content_directory",
+        # PatternVREV aliases
+        "patternvrev": "pattern_vrev",
+        "pattern revision": "pattern_vrev",
+        "pattern vrev": "pattern_vrev",
+        # TestType aliases (the test method/class - first TestType column)
+        "testtype": "test_type",
+        "test type": "test_type",
+        "test method": "test_type",
+        "test class": "test_type",
+        # TpOptions aliases
+        "tpoptions": "tp_options",
+        "tp options": "tp_options",
+        # Scrum aliases
+        "scrum": "scrum",
+        # ModuleName aliases
+        "modulename": "module_name",
+        "module name": "module_name",
+        "module": "module_name",
+        # ModuleUser aliases
+        "moduleuser": "module_user",
+        "module user": "module_user",
+        # TestCategory aliases
+        "testcategory": "test_category",
+        "test category": "test_category",
+        # Partition aliases
+        "partition": "partition",
+        # TestType.1 / TestType2 / TestTypeDetail aliases (second TestType column)
+        "testtype2": "test_type_detail",
+        "test type 2": "test_type_detail",
+        "testtype.1": "test_type_detail",
+        "test type detail": "test_type_detail",
+        "testtypedetail": "test_type_detail",
+        # TestTypeFlag aliases
+        "testtypeflag": "test_type_flag",
+        "test type flag": "test_type_flag",
+        # SubFlow aliases
+        "subflow": "subflow",
+        "sub flow": "subflow",
+        "flow": "subflow",
+        # PatternRatio aliases
+        "patternratio": "pattern_ratio",
+        "pattern ratio": "pattern_ratio",
+        # VoltageDomain aliases
+        "voltagedomain": "voltage_domain",
+        "voltage domain": "voltage_domain",
+        "voltage": "voltage_domain",
+        # Corner aliases
+        "corner": "corner",
+        # Frequency aliases
+        "frequency": "frequency",
+        "freq": "frequency",
+        # InstanceUser aliases
+        "instanceuser": "instance_user",
+        "instance user": "instance_user",
+        # Bypass aliases
+        "bypass": "bypass",
+        "bypassed": "bypass",
+    }
+
+    # All trackable attributes (canonical field names)
+    TRACKABLE_ATTRIBUTES: Tuple[str, ...] = tuple(set(FIELD_ALIASES.values()))
 
     def _extract_attribute_from_question(self, question: str) -> Optional[str]:
-        """Extract the attribute being queried (plist, levels, timing, etc.) from question."""
+        """Extract the attribute being queried from question using FIELD_ALIASES."""
         normalized = question.lower()
-        # Map synonyms to canonical field names
-        attribute_map = {
-            "plist": "plist",
-            "patlist": "plist",
-            "pattern list": "plist",
-            "level": "level",
-            "levels": "level",
-            "timing": "timing",
-            "timings": "timing",
-            "bins": "bins",
-            "bin": "bins",
-            "status": "status",
-            "bypass": "bypass",
-            "test_type": "test_type",
-            "testtype": "test_type",
-            "voltage_domain": "voltage_domain",
-            "voltage domain": "voltage_domain",
-            "corner": "corner",
-            "frequency": "frequency",
-        }
-        for keyword, canonical in attribute_map.items():
-            if keyword in normalized:
-                return canonical
+        
+        # Try longer phrases first (more specific matches)
+        sorted_aliases = sorted(self.FIELD_ALIASES.keys(), key=len, reverse=True)
+        for alias in sorted_aliases:
+            if alias in normalized:
+                return self.FIELD_ALIASES[alias]
         return None
 
     def _extract_test_instance_from_question(
@@ -889,6 +973,161 @@ class Tools:
         
         if len(history) > 10:
             lines.append(f"\n_...and {len(history) - 10} more TPs scanned_")
+        
+        return "\n".join(lines)
+
+    def _get_test_instance_details(
+        self,
+        test_collection: MongoCollection,
+        ctx: TPContext,
+        instance_name: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Get full details for a specific test instance."""
+        query = {
+            "tp_document_id": ctx.tp_document_id,
+            "instance_name": {"$regex": f"^{re.escape(instance_name)}$", "$options": "i"},
+        }
+        return test_collection.find_one(query)
+
+    def _format_test_details(
+        self,
+        test_doc: Dict[str, Any],
+        tp_name: str,
+    ) -> str:
+        """Format test instance details into a readable response."""
+        if not test_doc:
+            return "Test instance not found."
+        
+        instance_name = test_doc.get("instance_name", "Unknown")
+        lines = [f"📋 **Test Instance Details** for `{instance_name}`\n"]
+        lines.append(f"**Test Program**: `{tp_name}`\n")
+        
+        # Define field display order and friendly names
+        field_display = [
+            ("status", "Status"),
+            ("bypass", "Bypass"),
+            ("test_type", "Test Type (Method)"),
+            ("test_type_detail", "Test Type (Detail)"),
+            ("plist", "Pattern List (PLIST)"),
+            ("level", "Level"),
+            ("timing", "Timing"),
+            ("bins", "Bins"),
+            ("counters", "Counters"),
+            ("scrum", "Scrum"),
+            ("module_name", "Module Name"),
+            ("subflow", "SubFlow"),
+            ("test_category", "Test Category"),
+            ("partition", "Partition"),
+            ("voltage_domain", "Voltage Domain"),
+            ("corner", "Corner"),
+            ("frequency", "Frequency"),
+            ("content_directory", "Content Directory"),
+            ("pattern_vrev", "Pattern Revision"),
+            ("monitor_pat_count", "Monitor Pattern Count"),
+            ("kill_pat_count", "Kill Pattern Count"),
+            ("skipped_pat_count", "Skipped Pattern Count"),
+            ("tp_options", "TP Options"),
+            ("test_type_flag", "Test Type Flag"),
+            ("pattern_ratio", "Pattern Ratio"),
+            ("module_user", "Module User"),
+            ("instance_user", "Instance User"),
+        ]
+        
+        lines.append("| Field | Value |")
+        lines.append("|-------|-------|")
+        
+        for field_name, display_name in field_display:
+            value = test_doc.get(field_name)
+            if value is not None and value != "":
+                # Truncate long values
+                str_value = str(value)
+                if len(str_value) > 60:
+                    str_value = str_value[:57] + "..."
+                lines.append(f"| {display_name} | `{str_value}` |")
+        
+        return "\n".join(lines)
+
+    def _extract_filter_value_from_question(
+        self,
+        question: str,
+        attribute: str,
+    ) -> Optional[str]:
+        """Extract the filter value for a given attribute from the question.
+        
+        Handles patterns like:
+        - "list tests with status set to bypass"
+        - "tests with level = levels_nom"
+        - "tests where timing is timing_fast"
+        """
+        normalized = question.lower()
+        
+        # Patterns to extract value after attribute mention
+        patterns = [
+            rf'{attribute}\s+(?:set\s+to|=|is|equals?|:)\s+["\']?([^\s"\']+)["\']?',
+            rf'{attribute}\s+["\']?([^\s"\']+)["\']?',
+            rf'(?:with|where|having)\s+{attribute}\s+["\']?([^\s"\']+)["\']?',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, normalized, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+        
+        return None
+
+    def _filter_tests_by_attribute(
+        self,
+        test_collection: MongoCollection,
+        ctx: TPContext,
+        attribute: str,
+        value: str,
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """Filter tests by a specific attribute value."""
+        query = {
+            "tp_document_id": ctx.tp_document_id,
+            attribute: {"$regex": re.escape(value), "$options": "i"},
+        }
+        return list(test_collection.find(query).limit(limit))
+
+    def _format_filtered_tests(
+        self,
+        tests: List[Dict[str, Any]],
+        attribute: str,
+        value: str,
+        tp_name: str,
+        limit: int = 20,
+    ) -> str:
+        """Format filtered test results."""
+        if not tests:
+            return f"No tests found with `{attribute}` matching `{value}` in `{tp_name}`."
+        
+        # Get friendly name for attribute
+        friendly_names = {v: k.title() for k, v in self.FIELD_ALIASES.items()}
+        attr_display = friendly_names.get(attribute, attribute)
+        
+        lines = [f"🔍 **Tests with {attr_display} = `{value}`** in `{tp_name}`\n"]
+        lines.append(f"**Found**: {len(tests)} test(s)\n")
+        
+        # Show table with key columns
+        lines.append("| Instance Name | Status | {attr} |".format(attr=attr_display))
+        lines.append("|---------------|--------|--------|")
+        
+        for test in tests[:limit]:
+            name = test.get("instance_name", "Unknown")
+            status = test.get("status", "")
+            attr_val = test.get(attribute, "")
+            
+            # Truncate long names
+            if len(name) > 50:
+                name = name[:47] + "..."
+            if len(str(attr_val)) > 30:
+                attr_val = str(attr_val)[:27] + "..."
+            
+            lines.append(f"| {name} | {status} | {attr_val} |")
+        
+        if len(tests) > limit:
+            lines.append(f"\n_...and {len(tests) - limit} more tests_")
         
         return "\n".join(lines)
 
@@ -2224,6 +2463,76 @@ class Tools:
                     answer_lines.append(
                         self._format_attribute_change_answer(instance_name, attribute, history)
                     )
+
+            elif classification == "test_details":
+                # Get detailed parameters/attributes for a specific test instance
+                instance_name = self._extract_test_instance_from_question(
+                    question, test_collection, ctx
+                )
+                
+                if not instance_name:
+                    answer_lines.append(
+                        "❓ I couldn't identify the test instance name from your question.\n\n"
+                        "Please include the full test name, for example:\n"
+                        "- `ARR_CCF::XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL`\n"
+                        "- Or specify which test you'd like details for."
+                    )
+                else:
+                    test_doc = self._get_test_instance_details(
+                        test_collection, ctx, instance_name
+                    )
+                    if test_doc:
+                        answer_lines.append(
+                            self._format_test_details(test_doc, ctx.tp_name or "Unknown TP")
+                        )
+                    else:
+                        answer_lines.append(
+                            f"❌ Test instance `{instance_name}` not found in `{ctx.tp_name}`."
+                        )
+
+            elif classification == "filter_tests":
+                # Filter tests by a specific attribute value (e.g., "list tests with status bypass")
+                attribute = self._extract_attribute_from_question(question)
+                
+                if not attribute:
+                    # Try to detect what attribute they're filtering by
+                    answer_lines.append(
+                        "❓ I couldn't determine which field you want to filter by.\n\n"
+                        "Please specify the field, for example:\n"
+                        "- `list tests with status set to bypass`\n"
+                        "- `tests with level = levels_nom`\n"
+                        "- `show tests with subflow containing SDT`"
+                    )
+                else:
+                    filter_value = self._extract_filter_value_from_question(question, attribute)
+                    
+                    # Check for common filter values in the question
+                    if not filter_value:
+                        # Try to find value without attribute prefix
+                        common_values = ["bypass", "bypassed", "enabled", "disabled", "active"]
+                        for cv in common_values:
+                            if cv in question.lower():
+                                filter_value = cv
+                                break
+                    
+                    if not filter_value:
+                        answer_lines.append(
+                            f"❓ I found you want to filter by `{attribute}`, but couldn't determine the value.\n\n"
+                            f"Please specify the value, for example:\n"
+                            f"- `list tests with {attribute} set to <value>`"
+                        )
+                    else:
+                        tests = self._filter_tests_by_attribute(
+                            test_collection, ctx, attribute, filter_value,
+                            limit=self.valves.max_test_instance_rows,
+                        )
+                        answer_lines.append(
+                            self._format_filtered_tests(
+                                tests, attribute, filter_value,
+                                ctx.tp_name or "Unknown TP",
+                                limit=self.valves.max_test_instance_rows,
+                            )
+                        )
 
             elif classification == "yield_metrics":
                 # ProductXi: Yield metrics
