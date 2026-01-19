@@ -158,8 +158,8 @@ class QuestionClassifier:
         ("hot_repair", ("hot array repair", "hot repair", "hot-repair", "hotrepair")),
         ("array_repair", ("array repair", "running array", "repair flows")),
         ("sdt_flow", ("sdt flow", "sdt content")),
-        # Field change history - when did a field like plist, level, timing change
-        ("field_change_history", ("change last", "changed last", "last change", "when did", "what program did")),
+        # Attribute change history - when did X change last
+        ("attribute_change", ("change last", "changed last", "last change", "when did", "what program did")),
         # ProductXi production metrics classifications
         ("yield_metrics", ("yield", "sort yield", "sdt yield", "production yield")),
         ("dominant_fail", ("dominant fail", "top fail", "failing bins", "failing bin", "bin failure")),
@@ -654,176 +654,232 @@ class Tools:
             return match.group(1)
         return None
 
-    # Known field names that can be tracked for changes
-    TRACKABLE_FIELDS: Dict[str, List[str]] = {
-        "plist": ["plist", "patlist", "pattern list"],
-        "level": ["level", "levels"],
-        "timing": ["timing", "timings"],
-        "bins": ["bin", "bins"],
-        "status": ["status"],
-        "bypass": ["bypass"],
-    }
+    # Known trackable attributes for change history queries
+    TRACKABLE_ATTRIBUTES: Tuple[str, ...] = (
+        "plist", "patlist", "level", "levels", "timing", "timings",
+        "bins", "status", "bypass", "test_type", "voltage_domain",
+        "corner", "frequency",
+    )
 
-    def _extract_field_from_question(self, question: str) -> Optional[str]:
-        """Extract a field name (plist, level, timing, etc.) from the question."""
+    def _extract_attribute_from_question(self, question: str) -> Optional[str]:
+        """Extract the attribute being queried (plist, levels, timing, etc.) from question."""
         normalized = question.lower()
-        for field_key, aliases in self.TRACKABLE_FIELDS.items():
-            for alias in aliases:
-                if alias in normalized:
-                    return field_key
+        # Map synonyms to canonical field names
+        attribute_map = {
+            "plist": "plist",
+            "patlist": "plist",
+            "pattern list": "plist",
+            "level": "level",
+            "levels": "level",
+            "timing": "timing",
+            "timings": "timing",
+            "bins": "bins",
+            "bin": "bins",
+            "status": "status",
+            "bypass": "bypass",
+            "test_type": "test_type",
+            "testtype": "test_type",
+            "voltage_domain": "voltage_domain",
+            "voltage domain": "voltage_domain",
+            "corner": "corner",
+            "frequency": "frequency",
+        }
+        for keyword, canonical in attribute_map.items():
+            if keyword in normalized:
+                return canonical
         return None
 
     def _extract_test_instance_from_question(
-        self, question: str, modules_catalog: List[str]
+        self, question: str, test_collection: MongoCollection, ctx: TPContext
     ) -> Optional[str]:
-        """Extract a test instance name from the question.
+        """Extract a test instance name from the question by matching against known instances."""
+        # First try to find module::test pattern directly in question
+        # Pattern: MODULE_NAME::TEST_NAME or just TEST_NAME
+        patterns = [
+            r"([A-Z][A-Z0-9_]+)::([A-Z][A-Z0-9_]+)",  # MODULE::TEST format
+            r"\b([A-Z][A-Z0-9_]{10,})\b",  # Long uppercase identifier (likely test name)
+        ]
         
-        Looks for patterns like:
-        - ARR_CCF::XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL
-        - ARR_CCF XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL
-        - Just the test name: XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL
-        """
-        # Pattern 1: Module::TestName format
-        match = re.search(
-            r"([A-Z]{2,10}_[A-Z0-9_]+)::([A-Z][A-Z0-9_]+)",
-            question,
-            re.IGNORECASE,
-        )
-        if match:
-            return f"{match.group(1).upper()}::{match.group(2).upper()}"
-        
-        # Pattern 2: Module TestName format (space separated, module in catalog)
-        for module in modules_catalog:
-            pattern = rf"\b{re.escape(module)}\s+([A-Z][A-Z0-9_]{{10,}})\b"
-            match = re.search(pattern, question, re.IGNORECASE)
-            if match:
-                return f"{module.upper()}::{match.group(1).upper()}"
-        
-        # Pattern 3: Just a long test name (likely starts with XSA_, ALL_, etc.)
-        match = re.search(
-            r"\b((?:XSA|ALL|SSA)_[A-Z0-9_]{15,})\b",
-            question,
-            re.IGNORECASE,
-        )
-        if match:
-            return match.group(1).upper()
+        for pattern in patterns:
+            matches = re.findall(pattern, question, re.IGNORECASE)
+            if matches:
+                if isinstance(matches[0], tuple):
+                    # MODULE::TEST format
+                    candidate = f"{matches[0][0].upper()}::{matches[0][1].upper()}"
+                else:
+                    candidate = matches[0].upper()
+                
+                # Verify this test exists in the current TP
+                query = {
+                    "tp_document_id": ctx.tp_document_id,
+                    "instance_name": {"$regex": re.escape(candidate), "$options": "i"},
+                }
+                doc = test_collection.find_one(query)
+                if doc:
+                    return doc.get("instance_name")
         
         return None
 
-    def _trace_field_change_history(
-        self,
-        ingest_collection: MongoCollection,
-        test_collection: MongoCollection,
-        product_code: str,
-        instance_pattern: str,
-        field_name: str,
-        max_history: int = 50,
-    ) -> List[Dict[str, Any]]:
-        """Trace the history of a field value across TPs.
+    @staticmethod
+    def _tp_name_sort_key(tp_name: str) -> Tuple[str, int, str, int, str]:
+        """Extract a sort key from a TP name based on Intel naming standard.
         
-        Returns a list of dicts with:
-        - tp_name: The TP revision
-        - ingested_at: When it was ingested
-        - field_value: The value of the field in that TP
-        - changed: True if value changed from previous TP
+        TP naming convention (18 chars):
+        - [0-2]: Product Family (e.g., PTU)
+        - [3-4]: Form Factor (SD for singulated die)
+        - [5-6]: Socket/Temp (JX for joined/multi-temp)
+        - [7-8]: Stepping (A0, A1, B0, etc.)
+        - [9]: Tester Platform (H for HDMT)
+        - [10-12]: TP Revision - increments sequentially for life of product
+        - [13]: Milestone (0-PO, 1-ES1, 2-ES2, 3-QS, 4-PRQ)
+        - [14]: Sequential Release Number (0-9)
+        - [15-18]: Release Date (YYWW)
+        
+        Returns tuple for sorting: (revision_str, milestone, release_num, release_date)
+        Higher values = newer TP
         """
-        # Get all TPs for this product, sorted by ingested_at DESC (newest first)
-        tp_query = {
-            "$or": [
-                {"product.product_code": product_code},
-                {"metadata.product_code": product_code},
-            ]
-        }
-        tp_cursor = ingest_collection.find(
-            tp_query, {"_id": 1, "tp_name": 1, "ingested_at": 1}
-        ).sort("ingested_at", -1).limit(max_history)
+        if not tp_name or len(tp_name) < 15:
+            return ("000", 0, "0", 0, "0000")
         
-        tps = list(tp_cursor)
-        if not tps:
+        tp_upper = tp_name.upper()
+        
+        # Extract TP Revision [10-12] - this is the primary sort key
+        # Format: digit + digit + letter (e.g., "20J", "21A", "21F")
+        tp_revision = tp_upper[10:13] if len(tp_upper) >= 13 else "000"
+        
+        # Extract Milestone [13] - secondary sort key (0-4)
+        milestone = int(tp_upper[13]) if len(tp_upper) >= 14 and tp_upper[13].isdigit() else 0
+        
+        # Extract Sequential Release Number [14] - tertiary sort key
+        release_num = tp_upper[14] if len(tp_upper) >= 15 else "0"
+        
+        # Extract Release Date [15-18] - YYWW format (quaternary sort key)
+        release_date = tp_upper[15:19] if len(tp_upper) >= 19 else "0000"
+        
+        return (tp_revision, milestone, release_num, 0, release_date)
+
+    def _track_attribute_changes(
+        self,
+        test_collection: MongoCollection,
+        ingest_collection: MongoCollection,
+        product_code: str,
+        instance_name: str,
+        attribute: str,
+        max_history: int = 30,
+    ) -> List[Dict[str, Any]]:
+        """Track when an attribute changed across TP versions.
+        
+        Returns list of dicts with: tp_name, ingested_at, value, changed (bool)
+        Sorted by TP name (based on Intel naming convention) from newest to oldest.
+        """
+        # Get all TPs for this product
+        tp_docs = list(
+            ingest_collection.find(
+                {"$or": [
+                    {"metadata.product_code": product_code},
+                    {"product.product_code": product_code},
+                ]},
+                {"_id": 1, "tp_name": 1, "ingested_at": 1},
+            )
+        )
+        
+        if not tp_docs:
             return []
+        
+        # Sort by TP name using the naming convention (newest first = descending)
+        tp_docs.sort(key=lambda d: self._tp_name_sort_key(d.get("tp_name", "")), reverse=True)
+        
+        # Limit after sorting
+        tp_docs = tp_docs[:max_history]
         
         history: List[Dict[str, Any]] = []
         previous_value: Optional[str] = None
         
-        for tp_doc in tps:
-            tp_id = tp_doc["_id"]
+        for tp_doc in tp_docs:
+            tp_doc_id = tp_doc["_id"]
             tp_name = tp_doc.get("tp_name", "unknown")
             ingested_at = tp_doc.get("ingested_at")
             
             # Find the test instance in this TP
-            instance_query = {
-                "tp_document_id": tp_id,
-                "instance_name": {"$regex": instance_pattern, "$options": "i"},
-            }
-            test_doc = test_collection.find_one(instance_query, {field_name: 1, "instance_name": 1})
-            
-            if not test_doc:
-                # Test doesn't exist in this TP
-                continue
-            
-            field_value = (test_doc.get(field_name) or "").strip() or "(empty)"
-            changed = previous_value is not None and field_value != previous_value
-            
-            history.append({
-                "tp_name": tp_name,
-                "ingested_at": ingested_at,
-                "field_value": field_value,
-                "changed": changed,
-                "instance_name": test_doc.get("instance_name", ""),
+            test_doc = test_collection.find_one({
+                "tp_document_id": tp_doc_id,
+                "instance_name": instance_name,
             })
             
-            previous_value = field_value
+            if test_doc:
+                current_value = test_doc.get(attribute, "")
+                # Normalize value for comparison
+                if isinstance(current_value, list):
+                    current_value = ", ".join(str(v) for v in current_value)
+                else:
+                    current_value = str(current_value) if current_value else ""
+                
+                changed = previous_value is not None and current_value != previous_value
+                
+                history.append({
+                    "tp_name": tp_name,
+                    "ingested_at": ingested_at,
+                    "value": current_value,
+                    "changed": changed,
+                    "previous_value": previous_value if changed else None,
+                })
+                
+                previous_value = current_value
+            else:
+                # Test doesn't exist in this TP (might be new or removed)
+                history.append({
+                    "tp_name": tp_name,
+                    "ingested_at": ingested_at,
+                    "value": None,
+                    "changed": previous_value is not None,
+                    "previous_value": previous_value,
+                    "note": "Test not found in this TP",
+                })
         
         return history
 
-    def _format_field_change_history(
+    def _format_attribute_change_answer(
         self,
-        history: List[Dict[str, Any]],
         instance_name: str,
-        field_name: str,
+        attribute: str,
+        history: List[Dict[str, Any]],
     ) -> str:
-        """Format the field change history for display."""
+        """Format the attribute change history into a readable answer."""
         if not history:
-            return f"❌ Could not find test instance matching '{instance_name}' in any ingested TPs."
+            return f"No history found for {instance_name}."
         
-        # Find the most recent change
-        current_value = history[0]["field_value"] if history else "(unknown)"
-        current_tp = history[0]["tp_name"] if history else "(unknown)"
+        # Find when the attribute last changed
+        changes = [h for h in history if h.get("changed")]
+        current = history[0] if history else None
         
-        # Find when the field last changed
-        change_tp = None
-        previous_value = None
-        for entry in history:
-            if entry.get("changed"):
-                change_tp = entry["tp_name"]
-                # The previous value is what it changed TO in this TP
-                # We need to find what it was before
-                idx = history.index(entry)
-                if idx + 1 < len(history):
-                    previous_value = history[idx + 1]["field_value"]
-                break
+        lines = [f"📜 **{attribute.upper()}** change history for `{instance_name}`\n"]
         
-        lines = [f"📜 **{field_name.upper()} Change History** for `{instance_name}`\n"]
-        lines.append(f"**Current TP:** {current_tp}")
-        lines.append(f"**Current {field_name}:** `{current_value}`\n")
+        if current:
+            lines.append(f"**Current value** (in {current['tp_name']}): `{current['value'] or 'N/A'}`\n")
         
-        if change_tp:
-            lines.append(f"**Last changed in:** {change_tp}")
-            if previous_value:
-                lines.append(f"**Previous {field_name}:** `{previous_value}`")
+        if changes:
+            last_change = changes[0]  # Most recent change
+            lines.append(f"**Last changed** in: `{last_change['tp_name']}`")
+            lines.append(f"- Previous value: `{last_change.get('previous_value', 'N/A')}`")
+            lines.append(f"- New value: `{last_change['value']}`\n")
+            
+            if len(changes) > 1:
+                lines.append(f"**Total changes found**: {len(changes)} across {len(history)} TPs\n")
         else:
-            lines.append(f"**No changes detected** in the last {len(history)} TPs scanned.")
+            lines.append(f"**No changes detected** across {len(history)} TPs scanned.\n")
         
-        # Show recent history
-        lines.append(f"\n**Recent History** (newest first):")
-        for entry in history[:10]:
-            marker = "🔄" if entry.get("changed") else "  "
-            tp = entry["tp_name"]
-            val = entry["field_value"]
-            lines.append(f"{marker} {tp}: `{val}`")
+        # Show recent history table
+        lines.append("| TP Name | Value | Changed |")
+        lines.append("|---------|-------|---------|")
+        for h in history[:10]:
+            value = h['value'] if h['value'] is not None else "(not present)"
+            if len(str(value)) > 40:
+                value = str(value)[:37] + "..."
+            changed_mark = "⚡ Yes" if h.get("changed") else "No"
+            lines.append(f"| {h['tp_name']} | {value} | {changed_mark} |")
         
         if len(history) > 10:
-            lines.append(f"  ... and {len(history) - 10} more TPs scanned")
+            lines.append(f"\n_...and {len(history) - 10} more TPs scanned_")
         
         return "\n".join(lines)
 
@@ -2079,43 +2135,6 @@ class Tools:
                         "❌ No SDT flow content found (no tests with SubFlow containing 'SDT')."
                     )
 
-            elif classification == "field_change_history":
-                # Q13: Track when a field (plist, level, timing) last changed for a test instance
-                field_name = self._extract_field_from_question(question)
-                instance_name = self._extract_test_instance_from_question(question, modules_catalog)
-                
-                if not instance_name:
-                    answer_lines.append(
-                        "❌ Could not identify a test instance name in your question.\n"
-                        "Please include the full test name, e.g.:\n"
-                        "- `ARR_CCF::XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL`\n"
-                        "- or just `XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL`"
-                    )
-                elif not field_name:
-                    # Default to plist if no field specified
-                    field_name = "plist"
-                    history = self._trace_field_change_history(
-                        ingest_collection,
-                        test_collection,
-                        ctx.product_code or "",
-                        instance_name,
-                        field_name,
-                    )
-                    answer_lines.append(
-                        self._format_field_change_history(history, instance_name, field_name)
-                    )
-                else:
-                    history = self._trace_field_change_history(
-                        ingest_collection,
-                        test_collection,
-                        ctx.product_code or "",
-                        instance_name,
-                        field_name,
-                    )
-                    answer_lines.append(
-                        self._format_field_change_history(history, instance_name, field_name)
-                    )
-
             elif classification == "module_flow_tests":
                 module_filters, module_label = self._module_filters(module_match)
                 filters: Dict[str, Any] = {}
@@ -2163,6 +2182,39 @@ class Tools:
                         limit=self.valves.max_test_instance_rows,
                     )
                 )
+
+            elif classification == "attribute_change":
+                # Q13: Track when an attribute (plist, levels, timing) changed for a test
+                attribute = self._extract_attribute_from_question(question)
+                instance_name = self._extract_test_instance_from_question(
+                    question, test_collection, ctx
+                )
+                
+                if not attribute:
+                    # Default to plist if not specified
+                    attribute = "plist"
+                
+                if not instance_name:
+                    # Try to find a test name pattern more aggressively
+                    # Look for module::test or long test names in question
+                    answer_lines.append(
+                        "❓ I couldn't identify the test instance name from your question.\n\n"
+                        "Please include the full test name, for example:\n"
+                        "- `ARR_CCF::XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL`\n"
+                        "- Or just the test part: `XSA_CCF_VMAX_K_SDTEND_TITO_VCCIA_MAX_LFM_0800_CCF_CBO_ALL`"
+                    )
+                else:
+                    history = self._track_attribute_changes(
+                        test_collection,
+                        ingest_collection,
+                        ctx.product_code or "",
+                        instance_name,
+                        attribute,
+                        max_history=30,
+                    )
+                    answer_lines.append(
+                        self._format_attribute_change_answer(instance_name, attribute, history)
+                    )
 
             elif classification == "yield_metrics":
                 # ProductXi: Yield metrics
