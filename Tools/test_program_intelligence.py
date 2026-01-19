@@ -814,14 +814,12 @@ class Tools:
                 else:
                     current_value = str(current_value) if current_value else ""
                 
-                changed = previous_value is not None and current_value != previous_value
-                
                 history.append({
                     "tp_name": tp_name,
                     "ingested_at": ingested_at,
                     "value": current_value,
-                    "changed": changed,
-                    "previous_value": previous_value if changed else None,
+                    "changed": False,  # Will be set by post-processing
+                    "previous_value": None,  # Will be set by post-processing
                 })
                 
                 previous_value = current_value
@@ -831,10 +829,21 @@ class Tools:
                     "tp_name": tp_name,
                     "ingested_at": ingested_at,
                     "value": None,
-                    "changed": previous_value is not None,
-                    "previous_value": previous_value,
+                    "changed": False,
+                    "previous_value": None,
                     "note": "Test not found in this TP",
                 })
+        
+        # Post-process: Mark NEWER TP as "changed" when its value differs from OLDER TP
+        # Since we iterate newest→oldest, when history[i] differs from history[i+1],
+        # the change happened in history[i] (the newer TP)
+        for i in range(len(history) - 1):
+            newer_tp = history[i]
+            older_tp = history[i + 1]
+            if newer_tp["value"] is not None and older_tp["value"] is not None:
+                if newer_tp["value"] != older_tp["value"]:
+                    newer_tp["changed"] = True
+                    newer_tp["previous_value"] = older_tp["value"]
         
         return history
 
