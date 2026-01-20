@@ -14,6 +14,7 @@ from tp_ingest.config import IngestSettings
 from tp_ingest.product_config import load_product_configs
 
 from ingest_tp import run_ingestion
+from update_products_json import update_products_json
 
 StateDict = Dict[str, Dict[str, Dict[str, Dict[str, str]]]]
 FAILURE_STATUSES = {
@@ -410,6 +411,8 @@ def main() -> None:
 
     if not args.dry_run and not args.no_persist:
         save_state(args.state_file.resolve(), state)
+        # Auto-update Products.json with latest TP info from state
+        update_products_json(product_config_path, args.state_file.resolve())
 
     summary = {
         "run_started": _now_iso(),
