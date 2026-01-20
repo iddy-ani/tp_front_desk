@@ -146,6 +146,10 @@ class TPContext:
 
 class QuestionClassifier:
     MAPPINGS: List[Tuple[str, Tuple[str, ...]]] = [
+        # Product/TP inventory questions - check these early
+        ("list_products", ("what products", "which products", "products do you have", "products can you", "available products", "supported products")),
+        ("list_releases", ("what test programs", "which test programs", "test programs do you have", "list of releases", "available releases", "what releases", "how many releases")),
+        ("tp_info", ("do you have information on", "do you have info on", "is this test program", "have you ingested", "information on test program", "info on tp")),
         ("current_tp", ("current test program", "latest tp", "current tp")),
         ("list_tests", ("what tests", "list of tests", "tests does it have")),
         ("hvqk_flow", ("hvqk", "water fall", "waterfall")),
@@ -1843,6 +1847,151 @@ class Tools:
         return list(collection_handle.aggregate(pipeline))
 
     # Answer generators -----------------------------------------------------------------
+    def _format_list_products_answer(
+        self, product_collection: MongoCollection
+    ) -> str:
+        """Format list of all available products."""
+        products = list(product_collection.find({}, {
+            "product_code": 1, "product_name": 1, "latest_tp": 1, "number_of_releases": 1
+        }).sort("product_name", 1))
+        
+        if not products:
+            return "❌ No products configured in the system."
+        
+        lines = [f"📦 **Available Products** ({len(products)} total)\n"]
+        lines.append("| Product Code | Product Name | Latest TP | Releases |")
+        lines.append("|--------------|--------------|-----------|----------|")
+        
+        for p in products:
+            code = p.get("product_code", "?")
+            name = p.get("product_name", "Unknown")
+            latest = p.get("latest_tp", "N/A")
+            releases = p.get("number_of_releases", 0)
+            lines.append(f"| {code} | {name} | {latest} | {releases} |")
+        
+        lines.append("\n_Ask about a specific product by name or code, e.g., 'What is the yield for PantherLake CPU-U?'_")
+        return "\n".join(lines)
+
+    def _format_list_releases_answer(
+        self,
+        product_collection: MongoCollection,
+        ingest_collection: MongoCollection,
+        product_code: str,
+        product_name: str,
+    ) -> str:
+        """Format list of test programs/releases for a product."""
+        # Get product config for the list of releases
+        product_doc = product_collection.find_one({"product_code": product_code})
+        
+        if not product_doc:
+            return f"❌ No product found with code `{product_code}`."
+        
+        # Field is called "releases" in MongoDB
+        releases = product_doc.get("releases", []) or []
+        latest = product_doc.get("latest_tp", "")
+        num_releases = product_doc.get("number_of_releases", len(releases))
+        
+        # If no releases in product_configs, get from ingest_artifacts
+        ingested_tps: Dict[str, datetime] = {}
+        for doc in ingest_collection.find(
+            {"$or": [
+                {"product.product_code": product_code},
+                {"metadata.product_code": product_code},
+            ]},
+            {"tp_name": 1, "ingested_at": 1}
+        ):
+            tp = doc.get("tp_name", "")
+            if tp:
+                ingested_tps[tp.upper()] = doc.get("ingested_at")
+        
+        if not releases and ingested_tps:
+            # Fall back to ingested TPs sorted by name (using TP naming convention)
+            releases = sorted(ingested_tps.keys(), key=self._tp_name_sort_key, reverse=True)
+            num_releases = len(releases)
+            latest = releases[0] if releases else ""
+        
+        lines = [f"📋 **Test Programs for {product_name}** ({product_code})\n"]
+        lines.append(f"**Total releases**: {num_releases}")
+        if latest:
+            lines.append(f"**Latest TP**: `{latest}`\n")
+        else:
+            lines.append("**Latest TP**: _None configured_\n")
+        
+        if releases:
+            lines.append("| # | Test Program | Status |")
+            lines.append("|---|--------------|--------|")
+            
+            for i, tp in enumerate(releases[:30], 1):
+                status = "✅ Ingested" if tp.upper() in ingested_tps else "⏳ Not ingested"
+                if tp.upper() == latest.upper():
+                    lines.append(f"| {i} | `{tp}` | {status} ⭐ Latest |")
+                else:
+                    lines.append(f"| {i} | `{tp}` | {status} |")
+            
+            if len(releases) > 30:
+                lines.append(f"\n_...and {len(releases) - 30} more releases_")
+        else:
+            lines.append("_No releases tracked or ingested for this product._")
+        
+        return "\n".join(lines)
+
+    def _format_tp_info_answer(
+        self,
+        ingest_collection: MongoCollection,
+        test_collection: MongoCollection,
+        tp_name: str,
+    ) -> str:
+        """Format information about a specific test program."""
+        # Find the TP in ingest_artifacts
+        doc = ingest_collection.find_one({"tp_name": {"$regex": f"^{re.escape(tp_name)}$", "$options": "i"}})
+        
+        if not doc:
+            return (
+                f"❌ No information found for test program `{tp_name}`.\n\n"
+                "This TP may not have been ingested yet. Check available releases for a product "
+                "using 'What test programs do you have for [product name]?'"
+            )
+        
+        tp_name_actual = doc.get("tp_name", tp_name)
+        git_hash = doc.get("git_hash", "unknown")
+        ingested_at = doc.get("ingested_at")
+        metadata = doc.get("metadata", {}) or {}
+        product_blob = doc.get("product", {}) or {}
+        
+        product_code = product_blob.get("product_code") or metadata.get("product_code") or "?"
+        product_name = product_blob.get("product_name") or metadata.get("product_name") or "Unknown"
+        
+        # Count test instances
+        test_count = test_collection.count_documents({"tp_document_id": doc["_id"]})
+        
+        # Get status breakdown
+        status_pipeline = [
+            {"$match": {"tp_document_id": doc["_id"]}},
+            {"$group": {"_id": "$status", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+        ]
+        status_breakdown = list(test_collection.aggregate(status_pipeline))
+        
+        lines = [f"✅ **Test Program Found**: `{tp_name_actual}`\n"]
+        lines.append(f"**Product**: {product_name} ({product_code})")
+        lines.append(f"**Git Hash**: `{git_hash}`")
+        lines.append(f"**Ingested**: {ingested_at.isoformat() if ingested_at else 'Unknown'}")
+        lines.append(f"**Total Test Instances**: {test_count:,}\n")
+        
+        if status_breakdown:
+            lines.append("**Test Status Breakdown**:")
+            for s in status_breakdown[:6]:
+                status = s.get("_id", "Unknown")
+                count = s.get("count", 0)
+                lines.append(f"  - {status}: {count:,}")
+        
+        flow_tables = metadata.get("flow_table_names", [])
+        if flow_tables:
+            lines.append(f"\n**Flow Tables**: {', '.join(flow_tables[:5])}")
+        
+        lines.append(f"\n_You can now ask questions about this TP, e.g., 'What tests are in {tp_name_actual}?'_")
+        return "\n".join(lines)
+
     def _format_current_tp_answer(
         self, ctx: TPContext, product_state: Optional[dict]
     ) -> str:
@@ -2016,10 +2165,14 @@ class Tools:
         ingest_collection = self._get_collection(client, INGEST_COLLECTION)
         product_collection = self._get_collection(client, PRODUCT_COLLECTION)
         
+        # Early classification check - some questions don't need product/TP identification
+        early_classification = QuestionClassifier.classify(question)
+        no_product_required = {"list_products", "tp_info"}
+        
         # Early validation: Check if we can identify a product from the question
         # If no product_code or tp_name provided, try to infer from question
         inferred_product = None
-        if not product_code and not tp_name:
+        if not product_code and not tp_name and early_classification not in no_product_required:
             inferred_product = self._infer_product_from_question(product_collection, question)
             # Also check if there's a TP name in the question
             tp_hint = self._extract_tp_name_hint(question)
@@ -2047,6 +2200,53 @@ class Tools:
             tp_name,
         )
         classification = QuestionClassifier.classify(question)
+
+        # Handle inventory/catalog questions that don't require a specific TP context
+        test_collection = self._get_collection(client, TEST_INSTANCES_COLLECTION)
+        
+        if classification == "list_products":
+            # List all available products
+            await emitter.progress("Fetching available products...")
+            answer = self._format_list_products_answer(product_collection)
+            await emitter.success("Products listed")
+            return answer
+        
+        if classification == "list_releases":
+            # List test programs for a specific product
+            if not product_code and not inferred_product:
+                inferred_product = self._infer_product_from_question(product_collection, question)
+            if inferred_product:
+                product_code = inferred_product.get("product_code", "")
+                product_name = inferred_product.get("product_name", "")
+            elif product_code:
+                prod_doc = product_collection.find_one({"product_code": product_code})
+                product_name = prod_doc.get("product_name", "") if prod_doc else ""
+            else:
+                suggestions = self._candidate_product_suggestions(product_collection, question, limit=6)
+                suggestion_list = "\n".join(f"- {s}" for s in suggestions)
+                return (
+                    "Please specify which product you'd like to see releases for.\n\n"
+                    f"Available products:\n{suggestion_list}"
+                )
+            await emitter.progress(f"Fetching releases for {product_name}...")
+            answer = self._format_list_releases_answer(
+                product_collection, ingest_collection, product_code, product_name
+            )
+            await emitter.success("Releases listed")
+            return answer
+        
+        if classification == "tp_info":
+            # Check info on a specific test program
+            tp_hint = self._extract_tp_name_hint(question)
+            if not tp_hint:
+                return (
+                    "Please specify the test program name you're asking about.\n\n"
+                    "Example: 'Do you have information on PTUSDJXA1H21J412603?'"
+                )
+            await emitter.progress(f"Looking up {tp_hint}...")
+            answer = self._format_tp_info_answer(ingest_collection, test_collection, tp_hint)
+            await emitter.success("TP info retrieved")
+            return answer
 
         # ProductXi classifications don't require a full TP context, just product info
         productxi_classifications = {

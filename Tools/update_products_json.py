@@ -1,10 +1,14 @@
-"""Update Products.json with TP information from the scanner state file.
+"""Update Products.json and MongoDB product_configs with TP information from the scanner state file.
 
-This script reads the daily_scanner_state.json and updates Products.json with:
-- LatestTP: The newest TP based on TP naming convention
-- NumberOfReleases: Count of ingested TPs
-- ListOfReleases: All TP names sorted newest to oldest
-- LastRunDate: Timestamp of the last scan
+This script reads the daily_scanner_state.json and updates:
+1. Products.json with:
+   - LatestTP: The newest TP based on TP naming convention
+   - NumberOfReleases: Count of ingested TPs
+   - ListOfReleases: All TP names sorted newest to oldest
+   - LastRunDate: Timestamp of the last scan
+
+2. MongoDB product_configs collection with:
+   - latest_tp, number_of_releases, releases fields
 """
 from __future__ import annotations
 
@@ -16,6 +20,23 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
+
+# MongoDB connection for updating product_configs
+try:
+    from pymongo import MongoClient
+    MONGO_URI = (
+        "mongodb://iq6cdegc265ebn7uiiem_admin:"
+        "Yv0BqT17bakhZ9M%2CrL%3DbTPD0fqbVo%2Ch4@"
+        "10-108-27-21.dbaas.intel.com:27017,"
+        "10-108-27-23.dbaas.intel.com:27017,"
+        "10-109-224-18.dbaas.intel.com:27017/"
+        "tpfrontdesk?authSource=admin&tls=true"
+    )
+    MONGO_AVAILABLE = True
+except ImportError:
+    MONGO_AVAILABLE = False
+    MongoClient = None  # type: ignore
+    MONGO_URI = ""
 
 
 def tp_name_sort_key(tp_name: str) -> Tuple[str, int, str, int, str]:
@@ -37,6 +58,59 @@ def tp_name_sort_key(tp_name: str) -> Tuple[str, int, str, int, str]:
     release_date = tp_upper[15:19] if len(tp_upper) >= 19 else "0000"
     
     return (tp_revision, milestone, release_num, 0, release_date)
+
+
+def update_mongodb_product_configs(
+    products_data: List[Dict[str, Any]],
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """Update MongoDB product_configs collection with TP information.
+    
+    Args:
+        products_data: List of product dicts with LatestTP, NumberOfReleases, ListOfReleases
+        dry_run: If True, only show what would be updated
+    
+    Returns:
+        Summary of MongoDB updates
+    """
+    if not MONGO_AVAILABLE:
+        logger.warning("MongoDB not available (pymongo not installed)")
+        return {"error": "pymongo not installed", "updated": 0}
+    
+    try:
+        client = MongoClient(MONGO_URI)
+        product_configs = client["tpfrontdesk"]["product_configs"]
+    except Exception as e:
+        logger.error(f"MongoDB connection failed: {e}")
+        return {"error": str(e), "updated": 0}
+    
+    updated_count = 0
+    for product in products_data:
+        code = product.get("ProductCode", "")
+        latest_tp = product.get("LatestTP")
+        num_releases = product.get("NumberOfReleases", 0)
+        releases = product.get("ListOfReleases", [])
+        
+        if not code or not releases:
+            continue
+        
+        if dry_run:
+            logger.info(f"  [MongoDB DRY RUN] Would update {code}: {num_releases} releases")
+        else:
+            result = product_configs.update_one(
+                {"product_code": code},
+                {"$set": {
+                    "latest_tp": latest_tp,
+                    "number_of_releases": num_releases,
+                    "releases": releases,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }}
+            )
+            if result.modified_count > 0:
+                updated_count += 1
+                logger.info(f"  [MongoDB] Updated {code}: {num_releases} releases")
+    
+    return {"updated": updated_count, "dry_run": dry_run}
 
 
 def update_products_json(
@@ -98,8 +172,16 @@ def update_products_json(
     if not dry_run:
         products_path.write_text(json.dumps(products, indent=4), encoding="utf-8")
         logger.info(f"\nProducts.json updated at {products_path}")
+        
+        # Also update MongoDB
+        logger.info("\nUpdating MongoDB product_configs...")
+        mongo_result = update_mongodb_product_configs(products, dry_run=False)
+        changes["mongodb"] = mongo_result
     else:
         logger.info("\n[DRY RUN] Products.json not modified")
+        # Show what MongoDB would get
+        mongo_result = update_mongodb_product_configs(products, dry_run=True)
+        changes["mongodb"] = mongo_result
     
     changes["summary"] = {
         "total_products": len(products),
