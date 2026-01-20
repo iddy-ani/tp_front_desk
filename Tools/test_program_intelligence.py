@@ -160,16 +160,17 @@ class QuestionClassifier:
         ("sdt_flow", ("sdt flow", "sdt content")),
         # Attribute change history - when did X change last
         ("attribute_change", ("change last", "changed last", "last change", "when did", "what program did", "when was", "updated last")),
-        # Test instance details - get parameters/attributes of a specific test
-        ("test_details", ("parameters for", "details of", "attributes of", "show me test", "what is the")),
-        # Filter tests by attribute value
-        ("filter_tests", ("list tests with", "tests with", "tests where", "tests that have", "tests set to", "show tests with", "find tests with")),
-        # ProductXi production metrics classifications
+        # ProductXi production metrics classifications - MUST come before test_details
         ("yield_metrics", ("yield", "sort yield", "sdt yield", "production yield")),
         ("dominant_fail", ("dominant fail", "top fail", "failing bins", "failing bin", "bin failure")),
         ("production_summary", ("production summary", "production metrics", "production volume", "wafer count", "wafers processed", "how many wafers", "wafers", "dpw", "die per wafer")),
         ("resort_rate", ("resort rate", "resort")),
         ("prq_status", ("prq status", "prq", "qualification")),
+        # Test instance details - get parameters/attributes of a specific test
+        # Use specific patterns that include test identifiers (:: separator)
+        ("test_details", ("parameters for", "details of", "attributes of", "show me test", "details for test", "info for test")),
+        # Filter tests by attribute value
+        ("filter_tests", ("list tests with", "tests with", "tests where", "tests that have", "tests set to", "show tests with", "find tests with")),
     ]
 
     @classmethod
@@ -1434,7 +1435,11 @@ class Tools:
 
         attempts: List[Tuple[Dict[str, Any], Optional[str]]] = []
         base_query: Dict[str, Any] = {"$and": conditions} if conditions else {}
-        attempts.append((base_query, product_name_hint or None))
+        
+        # Only add base_query as first attempt if it has actual conditions
+        # Otherwise we'll rely on fuzzy matching below
+        if conditions:
+            attempts.append((base_query, product_name_hint or None))
 
         if not product_code:
             fuzzy_source = product_name_hint or question
