@@ -874,6 +874,166 @@
         }
       },
       "last_scan": "2026-01-19T21:47:51.543974+00:00"
+    },
+    "8PF9": {
+      "processed_tps": {
+        "NHHSDJXA0H60S212603": {
+          "last_processed": "2026-01-27T13:39:34.989324+00:00",
+          "git_hash": "96b3affca879dcafc6c12cf1af6101101fd8fceb",
+          "mongo_doc_id": "NHHSDJXA0H60S212603:96b3affca879dcafc6c12cf1af6101101fd8fceb"
+        },
+        "NHHSDJXA0H60S202602": {
+          "last_processed": "2026-01-27T13:55:53.814941+00:00",
+          "git_hash": "0f9fd92c635c7dc10d2efbc420b907b7f3d89665",
+          "mongo_doc_id": "NHHSDJXA0H60S202602:0f9fd92c635c7dc10d2efbc420b907b7f3d89665"
+        },
+        "NHHSDJXA0H60R202551": {
+          "last_processed": "2026-01-27T14:00:03.089602+00:00",
+          "git_hash": "447f687389c691b96feb432ca0f9bad4746f63b7",
+          "mongo_doc_id": "NHHSDJXA0H60R202551:447f687389c691b96feb432ca0f9bad4746f63b7"
+        },
+        "NHHSDJXA0H60P202549": {
+          "last_processed": "2026-01-27T14:03:12.038204+00:00",
+          "git_hash": "86b752de66a11cde6000e79f196af8aced6d6310",
+          "mongo_doc_id": "NHHSDJXA0H60P202549:86b752de66a11cde6000e79f196af8aced6d6310"
+        },
+        "NHHSDJXA0H60N222548": {
+          "last_processed": "2026-01-27T14:06:13.134505+00:00",
+          "git_hash": "3acd00ab55f3795d47548e6913ad800d3f1ed21a",
+          "mongo_doc_id": "NHHSDJXA0H60N222548:3acd00ab55f3795d47548e6913ad800d3f1ed21a"
+        },
+        "NHHSDJXA0H60N212548": {
+          "last_processed": "2026-01-27T14:09:32.035287+00:00",
+          "git_hash": "3acd00ab55f3795d47548e6913ad800d3f1ed21a",
+          "mongo_doc_id": "NHHSDJXA0H60N212548:3acd00ab55f3795d47548e6913ad800d3f1ed21a"
+        },
+        "NHHSDJXA0H60N202547": {
+          "last_processed": "2026-01-27T14:16:39.938146+00:00",
+          "git_hash": "eb4f0cc662275439a7c907539cdeede9fdd3e001",
+          "mongo_doc_id": "NHHSDJXA0H60N202547:eb4f0cc662275439a7c907539cdeede9fdd3e001"
+        },
+        "NHHSDJXA0H60M102545": {
+          "last_processed": "2026-01-27T14:22:05.530661+00:00",
+          "git_hash": "0f2472a46a8507d897d1d927e38106aee39c6746",
+          "mongo_doc_id": "NHHSDJXA0H60M102545:0f2472a46a8507d897d1d927e38106aee39c6746"
+        },
+        "NHHSDJXA0H60M202545": {
+          "last_processed": "2026-01-27T14:25:25.512310+00:00",
+          "git_hash": "0f2472a46a8507d897d1d927e38106aee39c6746",
+          "mongo_doc_id": "NHHSDJXA0H60M202545:0f2472a46a8507d897d1d927e38106aee39c6746"
+        },
+        "NHHSDJXA0H60K102543": {
+          "last_processed": "2026-01-27T14:29:22.841913+00:00",
+          "git_hash": "f34b74dc6d8f01e97e3c08569db0a8df66a7286c",
+          "mongo_doc_id": "NHHSDJXA0H60K102543:f34b74dc6d8f01e97e3c08569db0a8df66a7286c"
+        },
+        "NHHSDJXA0H60H102541": {
+          "last_processed": "2026-01-27T14:32:54.860825+00:00",
+          "git_hash": "d351f139cd39b7c63ca8a2c532d9b5e1c153b958",
+          "mongo_doc_id": "NHHSDJXA0H60H102541:d351f139cd39b7c63ca8a2c532d9b5e1c153b958"
+        },
+        "NHHSDJXA0H60F132538": {
+          "last_processed": "2026-01-27T14:36:23.435425+00:00",
+          "git_hash": "5812af819c2ae215bf9ee677f7132dc22e1adedc",
+          "mongo_doc_id": "NHHSDJXA0H60F132538:5812af819c2ae215bf9ee677f7132dc22e1adedc"
+        },
+        "NHHSDJXA0H60F122537": {
+          "last_processed": "2026-01-27T14:39:41.752329+00:00",
+          "git_hash": "622586b92ca909cccaed3b718cfa3c6b71cb5709",
+          "mongo_doc_id": "NHHSDJXA0H60F122537:622586b92ca909cccaed3b718cfa3c6b71cb5709"
+        },
+        "NHHSDJXA0H60F112536": {
+          "last_processed": "2026-01-27T14:42:48.631520+00:00",
+          "git_hash": "c8002c72cb80382fb74d910f56fd88aa166b950c",
+          "mongo_doc_id": "NHHSDJXA0H60F112536:c8002c72cb80382fb74d910f56fd88aa166b950c"
+        },
+        "NHHSDJXA0H60F102535": {
+          "last_processed": "2026-01-27T14:45:39.637525+00:00",
+          "git_hash": "6d30284c91c858acee633680220c62178eaa43b0",
+          "mongo_doc_id": "NHHSDJXA0H60F102535:6d30284c91c858acee633680220c62178eaa43b0"
+        },
+        "NHHSDJXA0H60E112532": {
+          "last_processed": "2026-01-27T14:48:08.508742+00:00",
+          "git_hash": "ba0cbf8195275a727df52103bfe68d2f75fd7975",
+          "mongo_doc_id": "NHHSDJXA0H60E112532:ba0cbf8195275a727df52103bfe68d2f75fd7975"
+        },
+        "NHHSDJXA0H60E102531": {
+          "last_processed": "2026-01-27T14:52:27.629835+00:00",
+          "git_hash": "e177dcc833572b9ea37859f51a9d3ce25ed773e8",
+          "mongo_doc_id": "NHHSDJXA0H60E102531:e177dcc833572b9ea37859f51a9d3ce25ed773e8"
+        },
+        "NHHSDJXA0H60E002531": {
+          "last_processed": "2026-01-27T14:57:13.621235+00:00",
+          "git_hash": "e177dcc833572b9ea37859f51a9d3ce25ed773e8",
+          "mongo_doc_id": "NHHSDJXA0H60E002531:e177dcc833572b9ea37859f51a9d3ce25ed773e8"
+        },
+        "NHHSDJXA0H60D022529": {
+          "last_processed": "2026-01-27T14:59:41.534215+00:00",
+          "git_hash": "bbe0ec0a108010c74e30fd096d07d70c5c936f9d",
+          "mongo_doc_id": "NHHSDJXA0H60D022529:bbe0ec0a108010c74e30fd096d07d70c5c936f9d"
+        },
+        "NHHSDJXA0H60D002529": {
+          "last_processed": "2026-01-27T15:02:33.625378+00:00",
+          "git_hash": "bbe0ec0a108010c74e30fd096d07d70c5c936f9d",
+          "mongo_doc_id": "NHHSDJXA0H60D002529:bbe0ec0a108010c74e30fd096d07d70c5c936f9d"
+        },
+        "NHHSDJXA0H60D012528": {
+          "last_processed": "2026-01-27T15:05:12.144778+00:00",
+          "git_hash": "696709ae59a158dbac88c03f848aafe01b625e0a",
+          "mongo_doc_id": "NHHSDJXA0H60D012528:696709ae59a158dbac88c03f848aafe01b625e0a"
+        },
+        "NHHSDJXA0H60D002528": {
+          "last_processed": "2026-01-27T15:07:38.624678+00:00",
+          "git_hash": "696709ae59a158dbac88c03f848aafe01b625e0a",
+          "mongo_doc_id": "NHHSDJXA0H60D002528:696709ae59a158dbac88c03f848aafe01b625e0a"
+        },
+        "NHHSDJXA0H60C002527": {
+          "last_processed": "2026-01-27T15:10:31.733129+00:00",
+          "git_hash": "ecab966f77d5d31c0fe97ee685829845598d9682",
+          "mongo_doc_id": "NHHSDJXA0H60C002527:ecab966f77d5d31c0fe97ee685829845598d9682"
+        },
+        "NHHSDJXA0H60B002526": {
+          "last_processed": "2026-01-27T15:13:11.226599+00:00",
+          "git_hash": "644f9cd2dab107984b417cbbe542f2c22ab48a05",
+          "mongo_doc_id": "NHHSDJXA0H60B002526:644f9cd2dab107984b417cbbe542f2c22ab48a05"
+        },
+        "NHHSDJXA0H60A002525": {
+          "last_processed": "2026-01-27T15:15:00.746796+00:00",
+          "git_hash": "933b0ed4c4bf79d52d37b14045fb4af519f38bf9",
+          "mongo_doc_id": "NHHSDJXA0H60A002525:933b0ed4c4bf79d52d37b14045fb4af519f38bf9"
+        },
+        "NHHSDJXA0H30A002524": {
+          "last_processed": "2026-01-27T15:17:39.027041+00:00",
+          "git_hash": "22f9140328cf1d4b9b54baf9136cb855e88f2c40",
+          "mongo_doc_id": "NHHSDJXA0H30A002524:22f9140328cf1d4b9b54baf9136cb855e88f2c40"
+        },
+        "NHHSDJXA0H30M00VIPR": {
+          "last_processed": "2026-01-27T15:17:59.385186+00:00",
+          "git_hash": "8cbc76566d21e05f330221711c39c659a3ab04d6",
+          "mongo_doc_id": "NHHSDJXA0H30M00VIPR:8cbc76566d21e05f330221711c39c659a3ab04d6"
+        },
+        "NHHSDJXA0H30M03AIRS": {
+          "last_processed": "2026-01-27T15:18:15.628570+00:00",
+          "git_hash": "8cbc76566d21e05f330221711c39c659a3ab04d6",
+          "mongo_doc_id": "NHHSDJXA0H30M03AIRS:8cbc76566d21e05f330221711c39c659a3ab04d6"
+        },
+        "NHHSDJXA0H30M02AIRS": {
+          "last_processed": "2026-01-27T15:18:35.502582+00:00",
+          "git_hash": "117237b1c33daec8e0da42098c2b1a1644cd6fcb",
+          "mongo_doc_id": "NHHSDJXA0H30M02AIRS:117237b1c33daec8e0da42098c2b1a1644cd6fcb"
+        },
+        "NHHSDJXA0H30M01AIRS": {
+          "last_processed": "2026-01-27T15:18:53.320465+00:00",
+          "git_hash": "63c3ea197b268cdcb1097a0257313d830a6b64a8",
+          "mongo_doc_id": "NHHSDJXA0H30M01AIRS:63c3ea197b268cdcb1097a0257313d830a6b64a8"
+        },
+        "NHHSDJXA0H30M00AIRS": {
+          "last_processed": "2026-01-27T15:19:09.848255+00:00",
+          "git_hash": "c71b8017099b28c374c3c7bb546849c249163270",
+          "mongo_doc_id": "NHHSDJXA0H30M00AIRS:c71b8017099b28c374c3c7bb546849c249163270"
+        }
+      },
+      "last_scan": "2026-01-27T15:19:09.848255+00:00"
     }
   }
 }
