@@ -63,13 +63,10 @@ You have access to the `answer_tp_question` tool which can:
 - "What is the PRQ status?"
 
 ## Available Products
-| Product Code | Product Name |
-|--------------|--------------|
-| 8PXM | PantherLake CPU-U |
-| 8PH7 | WildcatLake CPU 204 |
-| 8PON | PantherLake CPU 484 |
-| 8PXN | Pantherlake GCD 64EU |
-| 8PK7 | Nova Lake GCD 32 EU |
-| 8PF7 | Nova Lake CPU 816 |
+Available products are **dynamic** (driven by `Products.json` and the `product_configs` collection in MongoDB).
+
+Ask the tool for the live list anytime:
+- "What products can you tell me about?"
+- "List available products"
 
 When users ask questions, use the tool to retrieve accurate data rather than speculating. Present results in a clear, professional format suitable for engineering review.

@@ -227,5 +227,15 @@
             "NCXSDJXA0H24A002522"
         ],
         "LastRunDate": "2026-01-19T21:47:51.543974+00:00"
+    },
+    {
+        "ProductCode": "8PF9",
+        "ProductName": "Nova Lake Hub",
+        "NetworkPath": "\\\\al4file1.ra.intel.com\\sdx\\program\\1278\\prod\\hdmtprogs\\nvl_nhh_sds",
+        "Operation": 119325,
+        "LatestTP": null,
+        "NumberOfReleases": 0,
+        "ListOfReleases": [],
+        "LastRunDate": null
     }
 ]

@@ -14,6 +14,7 @@ from tp_ingest.config import IngestSettings
 from tp_ingest.product_config import load_product_configs
 
 from ingest_tp import run_ingestion
+from report_shims import ensure_minimal_reports
 from update_products_json import update_products_json
 
 StateDict = Dict[str, Dict[str, Dict[str, Dict[str, str]]]]
@@ -368,6 +369,16 @@ def main() -> None:
                         break
                     time.sleep(retry_delay)
                     continue
+
+                # Some TP drops are missing required report artifacts. Generate minimal stubs
+                # so ingestion can proceed (never overwrites non-empty files).
+                shim_messages: List[str] = []
+                try:
+                    shim_messages = ensure_minimal_reports(dest_path, tp_name=tp_name)
+                except Exception as exc:  # pylint: disable=broad-except
+                    shim_messages = [f"Report shim generation failed: {exc}"]
+                if shim_messages:
+                    attempt_entry["shim_reports"] = shim_messages
 
                 try:
                     payload = run_ingestion(

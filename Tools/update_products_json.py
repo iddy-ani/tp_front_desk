@@ -86,29 +86,61 @@ def update_mongodb_product_configs(
     
     updated_count = 0
     for product in products_data:
-        code = product.get("ProductCode", "")
-        latest_tp = product.get("LatestTP")
-        num_releases = product.get("NumberOfReleases", 0)
-        releases = product.get("ListOfReleases", [])
-        
-        if not code or not releases:
+        code = (product.get("ProductCode") or "").upper()
+        if not code:
             continue
+
+        latest_tp = product.get("LatestTP")
+        num_releases = product.get("NumberOfReleases")
+        if num_releases is None:
+            num_releases = 0
+        releases = product.get("ListOfReleases", []) or []
+        product_name = product.get("ProductName")
+        network_path = product.get("NetworkPath")
+        last_run_date = product.get("LastRunDate")
+
+        additional_attributes = {
+            k: v
+            for k, v in product.items()
+            if k
+            not in {
+                "ProductCode",
+                "ProductName",
+                "NetworkPath",
+                "LatestTP",
+                "NumberOfReleases",
+                "ListOfReleases",
+                "LastRunDate",
+            }
+        }
         
         if dry_run:
-            logger.info(f"  [MongoDB DRY RUN] Would update {code}: {num_releases} releases")
+            logger.info(
+                "  [MongoDB DRY RUN] Would upsert %s: latest=%s releases=%s",
+                code,
+                latest_tp,
+                num_releases,
+            )
         else:
+            update_doc: Dict[str, Any] = {
+                "product_code": code,
+                "product_name": product_name,
+                "network_path": network_path,
+                "latest_tp": latest_tp,
+                "number_of_releases": num_releases,
+                "releases": releases,
+                "last_run_date": last_run_date,
+                "additional_attributes": additional_attributes,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
             result = product_configs.update_one(
                 {"product_code": code},
-                {"$set": {
-                    "latest_tp": latest_tp,
-                    "number_of_releases": num_releases,
-                    "releases": releases,
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
-                }}
+                {"$set": update_doc},
+                upsert=True,
             )
-            if result.modified_count > 0:
+            if result.modified_count > 0 or result.upserted_id is not None:
                 updated_count += 1
-                logger.info(f"  [MongoDB] Updated {code}: {num_releases} releases")
+                logger.info(f"  [MongoDB] Upserted {code}: {num_releases} releases")
     
     return {"updated": updated_count, "dry_run": dry_run}
 
