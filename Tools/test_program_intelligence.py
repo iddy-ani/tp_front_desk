@@ -112,16 +112,48 @@ class EventEmitter:
         self, description: str, status: str = "in_progress", done: bool = False
     ):
         if self._event_emitter:
-            await self._event_emitter(
-                {
-                    "type": "status",
-                    "data": {
-                        "status": status,
-                        "description": description,
-                        "done": done,
-                    },
-                }
-            )
+            payload = {
+                "type": "status",
+                "data": {
+                    "status": status,
+                    "description": description,
+                    "done": done,
+                },
+            }
+            self._safe_emit(payload)
+
+    async def citation(
+        self,
+        title: str,
+        url: str,
+        content: str,
+    ) -> None:
+        """Emit a citation event for source attribution."""
+        if self._event_emitter:
+            payload = {
+                "type": "citation",
+                "data": {
+                    "document": [content[:5000]],  # Truncate for citation
+                    "metadata": [{"source": url}],
+                    "source": {"name": title, "url": url},
+                },
+            }
+            self._safe_emit(payload)
+
+    def _safe_emit(self, payload: dict) -> None:
+        """Safely emit an event, handling sync/async emitters."""
+        if not self._event_emitter:
+            return
+        try:
+            result = self._event_emitter(payload)
+            if asyncio.iscoroutine(result):
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(result)
+                except RuntimeError:
+                    asyncio.run(result)
+        except Exception as e:
+            print(f"WARNING: Failed to emit event: {e}")
 
     async def progress(self, description: str):
         await self.emit(description, "in_progress", False)
@@ -147,9 +179,40 @@ class TPContext:
 class QuestionClassifier:
     MAPPINGS: List[Tuple[str, Tuple[str, ...]]] = [
         # Product/TP inventory questions - check these early
-        ("list_products", ("what products", "which products", "products do you have", "products can you", "available products", "supported products")),
-        ("list_releases", ("what test programs", "which test programs", "test programs do you have", "list of releases", "available releases", "what releases", "how many releases")),
-        ("tp_info", ("do you have information on", "do you have info on", "is this test program", "have you ingested", "information on test program", "info on tp")),
+        (
+            "list_products",
+            (
+                "what products",
+                "which products",
+                "products do you have",
+                "products can you",
+                "available products",
+                "supported products",
+            ),
+        ),
+        (
+            "list_releases",
+            (
+                "what test programs",
+                "which test programs",
+                "test programs do you have",
+                "list of releases",
+                "available releases",
+                "what releases",
+                "how many releases",
+            ),
+        ),
+        (
+            "tp_info",
+            (
+                "do you have information on",
+                "do you have info on",
+                "is this test program",
+                "have you ingested",
+                "information on test program",
+                "info on tp",
+            ),
+        ),
         ("current_tp", ("current test program", "latest tp", "current tp")),
         ("list_tests", ("what tests", "list of tests", "tests does it have")),
         ("hvqk_flow", ("hvqk", "water fall", "waterfall")),
@@ -163,18 +226,66 @@ class QuestionClassifier:
         ("array_repair", ("array repair", "running array", "repair flows")),
         ("sdt_flow", ("sdt flow", "sdt content")),
         # Attribute change history - when did X change last
-        ("attribute_change", ("change last", "changed last", "last change", "when did", "what program did", "when was", "updated last")),
+        (
+            "attribute_change",
+            (
+                "change last",
+                "changed last",
+                "last change",
+                "when did",
+                "what program did",
+                "when was",
+                "updated last",
+            ),
+        ),
         # ProductXi production metrics classifications - MUST come before test_details
         ("yield_metrics", ("yield", "sort yield", "sdt yield", "production yield")),
-        ("dominant_fail", ("dominant fail", "top fail", "failing bins", "failing bin", "bin failure")),
-        ("production_summary", ("production summary", "production metrics", "production volume", "wafer count", "wafers processed", "how many wafers", "wafers", "dpw", "die per wafer")),
+        (
+            "dominant_fail",
+            ("dominant fail", "top fail", "failing bins", "failing bin", "bin failure"),
+        ),
+        (
+            "production_summary",
+            (
+                "production summary",
+                "production metrics",
+                "production volume",
+                "wafer count",
+                "wafers processed",
+                "how many wafers",
+                "wafers",
+                "dpw",
+                "die per wafer",
+            ),
+        ),
         ("resort_rate", ("resort rate", "resort")),
         ("prq_status", ("prq status", "prq", "qualification")),
         # Test instance details - get parameters/attributes of a specific test
         # Use specific patterns that include test identifiers (:: separator)
-        ("test_details", ("parameters for", "details of", "attributes of", "show me test", "details for test", "info for test")),
+        (
+            "test_details",
+            (
+                "parameters for",
+                "details of",
+                "attributes of",
+                "show me test",
+                "details for test",
+                "info for test",
+            ),
+        ),
         # Filter tests by attribute value
-        ("filter_tests", ("list tests with", "tests with", "tests where", "tests that have", "tests set to", "show tests with", "find tests with")),
+        (
+            "filter_tests",
+            (
+                "list tests with",
+                "tests with",
+                "tests where",
+                "tests that have",
+                "tests set to",
+                "show tests with",
+                "find tests with",
+            ),
+        ),
     ]
 
     @classmethod
@@ -203,13 +314,16 @@ class Tools:
     _PUBLIC_TOOL_METHODS: Tuple[str, ...] = (
         "answer_tp_question",
         "fetch_productxi_data_json",
+        "tool_help",
     )
 
     def __dir__(self) -> List[str]:  # type: ignore[override]
         names = object.__dir__(self)
         allowed = set(self._PUBLIC_TOOL_METHODS)
         # Keep dunder names for normal Python introspection; Open WebUI filters them anyway.
-        return sorted([name for name in names if name in allowed or name.startswith("__")])
+        return sorted(
+            [name for name in names if name in allowed or name.startswith("__")]
+        )
 
     class Valves(BaseModel):
         max_test_instance_rows: int = Field(
@@ -250,8 +364,75 @@ class Tools:
 
     def __init__(self):
         self.valves = self.Valves()
+        self.citation = False  # CRITICAL: Disable auto-citations when using custom citations
         self._mongo_client: Optional[MongoClientType] = None
         self._productxi_client: Optional[MongoClientType] = None
+
+    # Help & Guidance -------------------------------------------------------------------
+    async def tool_help(
+        self,
+        __event_emitter__: Optional[Callable[[dict], Any]] = None,
+    ) -> str:
+        """Get help on how to use the Test Program Intelligence tool."""
+        emitter = EventEmitter(__event_emitter__)
+        await emitter.emit("📋 Showing help...", "complete", done=True)
+        return self._get_usage_guidance()
+
+    def _get_usage_guidance(self) -> str:
+        """Return comprehensive usage guidance for the tool."""
+        return """## 🧠 Test Program Intelligence Tool
+
+This tool answers questions about HDMT test programs by querying normalized MongoDB collections.
+
+### Quick Start
+Just ask naturally:
+- "What products do you have?"
+- "What test programs are available for PantherLake?"
+- "What is the yield for 8PXM?"
+- "Show me tests with status set to bypass"
+- "When did the plist change for TEST_NAME?"
+
+### Available Question Types
+
+| Category | Example Questions |
+|----------|-------------------|
+| **Product Inventory** | "What products do you have?", "List available products" |
+| **Test Program List** | "What test programs exist for PantherLake?", "List releases for 8PXM" |
+| **TP Info** | "Do you have info on TP_NAME?", "Is this test program ingested?" |
+| **Current TP** | "What is the current test program for PantherLake?" |
+| **Test Listing** | "What tests are in this TP?", "List tests" |
+| **Test Details** | "Show me details for MODULE::TEST_NAME" |
+| **Filter Tests** | "List tests with status set to bypass", "Tests where level = levels_nom" |
+| **Change History** | "When did the plist change last for TEST_NAME?" |
+| **HVQK/Waterfall** | "Show HVQK coverage", "Waterfall configs" |
+| **Yield Metrics** | "What is the yield for PantherLake?" |
+| **Production Summary** | "How many wafers were processed?", "DPW for 8PXM" |
+| **Dominant Fails** | "What are the top failing bins?" |
+
+### Configuration
+Configure in **User Settings** (Workspace > Tools > ⚙️):
+- `mongo_database`: Override default database
+- `product_code`: Your preferred product (e.g., "8PXM")
+- `tp_name`: Your preferred test program name
+
+### Data Sources
+- **TPFrontDesk MongoDB**: Test program definitions, test instances, flows, setpoints
+- **ProductXi MongoDB**: Production metrics, yield data, wafer counts
+
+### Tips
+1. Specify a product code (e.g., 8PXM) or name (PantherLake CPU-U) for best results
+2. For test details, use the full instance name: `MODULE::TEST_NAME`
+3. For change history, mention the attribute: "When did the **plist** change?"
+4. Production metrics require a valid product code in ProductXi
+
+### Troubleshooting
+- **"Couldn't find an ingest"**: Check the product code/name spelling, or ask "What products do you have?"
+- **"No ProductXi data"**: The product may not have production metrics yet
+- **Empty results**: Try broader search terms or check if the TP is ingested
+
+### Need More Help?
+Ask: "What products do you have?" to see available options.
+"""
 
     # ProductXi helpers -----------------------------------------------------------------
     def _get_productxi_client(self) -> Optional[MongoClientType]:
@@ -310,7 +491,10 @@ class Tools:
     @staticmethod
     def _looks_like_trend_question(question: str) -> bool:
         normalized = (question or "").lower()
-        return any(token in normalized for token in ("trend", "over time", "history", "historical"))
+        return any(
+            token in normalized
+            for token in ("trend", "over time", "history", "historical")
+        )
 
     def _get_current_work_week(self) -> int:
         """Calculate current work week in YYYYWW format."""
@@ -335,7 +519,9 @@ class Tools:
         # Allow callers to pass a product name like "PantherLake CPU-U".
         # ProductXi expects a product code prefix (e.g., 8PXM) in devrevstep.
         if product_code and not self._looks_like_product_code(product_code):
-            resolved_code, _resolved_name = self._resolve_product_code_from_label(product_code)
+            resolved_code, _resolved_name = self._resolve_product_code_from_label(
+                product_code
+            )
             if resolved_code:
                 product_code = resolved_code
 
@@ -360,7 +546,7 @@ class Tools:
             # First find the most recent week
             latest_doc = collection.find_one(
                 {"devrevstep": {"$regex": f"^{devrevstep_prefix}", "$options": "i"}},
-                sort=[("Work Week", -1)]
+                sort=[("Work Week", -1)],
             )
             if not latest_doc:
                 return []
@@ -368,7 +554,7 @@ class Tools:
             # Get distinct weeks and take top N
             all_weeks = collection.distinct(
                 "Work Week",
-                {"devrevstep": {"$regex": f"^{devrevstep_prefix}", "$options": "i"}}
+                {"devrevstep": {"$regex": f"^{devrevstep_prefix}", "$options": "i"}},
             )
             top_weeks = sorted(all_weeks, reverse=True)[:last_n_weeks]
             if not top_weeks:
@@ -379,7 +565,7 @@ class Tools:
             # Default: fetch the latest week available
             latest_doc = collection.find_one(
                 {"devrevstep": {"$regex": f"^{devrevstep_prefix}", "$options": "i"}},
-                sort=[("Work Week", -1)]
+                sort=[("Work Week", -1)],
             )
             if not latest_doc:
                 return []
@@ -443,13 +629,14 @@ class Tools:
 
         resolved_code, resolved_name = self._resolve_product_code_from_label(product)
         if not resolved_code:
-            await emitter.error(
-                "Could not resolve product to a product code. Provide a product code (e.g., 8PXM) or a known product name."
+            await emitter.emit(
+                "⚠️ Could not resolve product", "complete", done=True
             )
             return json.dumps(
                 {
-                    "error": "Could not resolve product",
+                    "error": "Could not resolve product. Provide a product code (e.g., 8PXM) or a known product name.",
                     "product": product,
+                    "help": "Try 'What products do you have?' to see available products.",
                     "results": [],
                 },
                 ensure_ascii=False,
@@ -461,13 +648,23 @@ class Tools:
             # If they didn't pass anything, default to latest.
             pass
 
-        await emitter.progress(f"Fetching ProductXi rows for {resolved_name or resolved_code}...")
+        await emitter.progress(
+            f"📊 Fetching ProductXi rows for {resolved_name or resolved_code}..."
+        )
         rows = self.fetch_productxi_data(
             resolved_code,
             work_week=work_week,
             last_n_weeks=last_n_weeks,
         )
-        await emitter.success("ProductXi query complete")
+        
+        # Emit citation for ProductXi data source
+        await emitter.citation(
+            title=f"ProductXi: {resolved_name or resolved_code}",
+            url="mongodb://productXi/ProductXi_PROD",
+            content=f"Production metrics for {resolved_name or resolved_code} from ProductXi MongoDB database. Work Week: {work_week or 'latest'}, Last N Weeks: {last_n_weeks or 'N/A'}",
+        )
+        
+        await emitter.emit("✅ ProductXi query complete", "complete", done=True)
         return json.dumps(
             {
                 "product": product,
@@ -488,7 +685,7 @@ class Tools:
         """Format yield metrics from ProductXi data."""
         if not rows:
             return f"❌ No yield data found for {product_name} in ProductXi."
-        
+
         lines = [f"📊 Yield Metrics for {product_name}"]
         for row in rows[:10]:  # Limit to 10 entries
             ww = row.get("Work Week", "?")
@@ -506,7 +703,7 @@ class Tools:
         """Format dominant fail information from ProductXi data."""
         if not rows:
             return f"❌ No dominant fail data found for {product_name} in ProductXi."
-        
+
         lines = [f"🔴 Dominant Fail Analysis for {product_name}"]
         for row in rows[:10]:
             ww = row.get("Work Week", "?")
@@ -523,7 +720,7 @@ class Tools:
         """Format production summary from ProductXi data."""
         if not rows:
             return f"❌ No production data found for {product_name} in ProductXi."
-        
+
         lines = [f"🏭 Production Summary for {product_name}"]
         for row in rows[:10]:
             ww = row.get("Work Week", "?")
@@ -543,7 +740,7 @@ class Tools:
         """Format resort rate information from ProductXi data."""
         if not rows:
             return f"❌ No resort rate data found for {product_name} in ProductXi."
-        
+
         lines = [f"🔄 Resort Rate for {product_name}"]
         for row in rows[:10]:
             ww = row.get("Work Week", "?")
@@ -560,7 +757,7 @@ class Tools:
         """Format PRQ status from ProductXi data."""
         if not rows:
             return f"❌ No PRQ status data found for {product_name} in ProductXi."
-        
+
         lines = [f"✅ PRQ Status for {product_name}"]
         # Group by PRQ status
         prq_summary: Dict[str, List[str]] = {}
@@ -573,7 +770,7 @@ class Tools:
                 prq_summary[prq] = []
             if key not in prq_summary[prq]:
                 prq_summary[prq].append(key)
-        
+
         for prq_status, configs in prq_summary.items():
             lines.append(f"  {prq_status}: {', '.join(configs)}")
         return "\n".join(lines)
@@ -770,7 +967,7 @@ class Tools:
     def _extract_attribute_from_question(self, question: str) -> Optional[str]:
         """Extract the attribute being queried from question using FIELD_ALIASES."""
         normalized = question.lower()
-        
+
         # Try longer phrases first (more specific matches)
         sorted_aliases = sorted(self.FIELD_ALIASES.keys(), key=len, reverse=True)
         for alias in sorted_aliases:
@@ -788,7 +985,7 @@ class Tools:
             r"([A-Z][A-Z0-9_]+)::([A-Z][A-Z0-9_]+)",  # MODULE::TEST format
             r"\b([A-Z][A-Z0-9_]{10,})\b",  # Long uppercase identifier (likely test name)
         ]
-        
+
         for pattern in patterns:
             matches = re.findall(pattern, question, re.IGNORECASE)
             if matches:
@@ -797,7 +994,7 @@ class Tools:
                     candidate = f"{matches[0][0].upper()}::{matches[0][1].upper()}"
                 else:
                     candidate = matches[0].upper()
-                
+
                 # Verify this test exists in the current TP
                 query = {
                     "tp_document_id": ctx.tp_document_id,
@@ -806,13 +1003,13 @@ class Tools:
                 doc = test_collection.find_one(query)
                 if doc:
                     return doc.get("instance_name")
-        
+
         return None
 
     @staticmethod
     def _tp_name_sort_key(tp_name: str) -> Tuple[str, int, str, int, str]:
         """Extract a sort key from a TP name based on Intel naming standard.
-        
+
         TP naming convention (18 chars):
         - [0-2]: Product Family (e.g., PTU)
         - [3-4]: Form Factor (SD for singulated die)
@@ -823,28 +1020,30 @@ class Tools:
         - [13]: Milestone (0-PO, 1-ES1, 2-ES2, 3-QS, 4-PRQ)
         - [14]: Sequential Release Number (0-9)
         - [15-18]: Release Date (YYWW)
-        
+
         Returns tuple for sorting: (revision_str, milestone, release_num, release_date)
         Higher values = newer TP
         """
         if not tp_name or len(tp_name) < 15:
             return ("000", 0, "0", 0, "0000")
-        
+
         tp_upper = tp_name.upper()
-        
+
         # Extract TP Revision [10-12] - this is the primary sort key
         # Format: digit + digit + letter (e.g., "20J", "21A", "21F")
         tp_revision = tp_upper[10:13] if len(tp_upper) >= 13 else "000"
-        
+
         # Extract Milestone [13] - secondary sort key (0-4)
-        milestone = int(tp_upper[13]) if len(tp_upper) >= 14 and tp_upper[13].isdigit() else 0
-        
+        milestone = (
+            int(tp_upper[13]) if len(tp_upper) >= 14 and tp_upper[13].isdigit() else 0
+        )
+
         # Extract Sequential Release Number [14] - tertiary sort key
         release_num = tp_upper[14] if len(tp_upper) >= 15 else "0"
-        
+
         # Extract Release Date [15-18] - YYWW format (quaternary sort key)
         release_date = tp_upper[15:19] if len(tp_upper) >= 19 else "0000"
-        
+
         return (tp_revision, milestone, release_num, 0, release_date)
 
     def _track_attribute_changes(
@@ -857,44 +1056,50 @@ class Tools:
         max_history: int = 30,
     ) -> List[Dict[str, Any]]:
         """Track when an attribute changed across TP versions.
-        
+
         Returns list of dicts with: tp_name, ingested_at, value, changed (bool)
         Sorted by TP name (based on Intel naming convention) from newest to oldest.
         """
         # Get all TPs for this product
         tp_docs = list(
             ingest_collection.find(
-                {"$or": [
-                    {"metadata.product_code": product_code},
-                    {"product.product_code": product_code},
-                ]},
+                {
+                    "$or": [
+                        {"metadata.product_code": product_code},
+                        {"product.product_code": product_code},
+                    ]
+                },
                 {"_id": 1, "tp_name": 1, "ingested_at": 1},
             )
         )
-        
+
         if not tp_docs:
             return []
-        
+
         # Sort by TP name using the naming convention (newest first = descending)
-        tp_docs.sort(key=lambda d: self._tp_name_sort_key(d.get("tp_name", "")), reverse=True)
-        
+        tp_docs.sort(
+            key=lambda d: self._tp_name_sort_key(d.get("tp_name", "")), reverse=True
+        )
+
         # Limit after sorting
         tp_docs = tp_docs[:max_history]
-        
+
         history: List[Dict[str, Any]] = []
         previous_value: Optional[str] = None
-        
+
         for tp_doc in tp_docs:
             tp_doc_id = tp_doc["_id"]
             tp_name = tp_doc.get("tp_name", "unknown")
             ingested_at = tp_doc.get("ingested_at")
-            
+
             # Find the test instance in this TP
-            test_doc = test_collection.find_one({
-                "tp_document_id": tp_doc_id,
-                "instance_name": instance_name,
-            })
-            
+            test_doc = test_collection.find_one(
+                {
+                    "tp_document_id": tp_doc_id,
+                    "instance_name": instance_name,
+                }
+            )
+
             if test_doc:
                 current_value = test_doc.get(attribute, "")
                 # Normalize value for comparison
@@ -902,27 +1107,31 @@ class Tools:
                     current_value = ", ".join(str(v) for v in current_value)
                 else:
                     current_value = str(current_value) if current_value else ""
-                
-                history.append({
-                    "tp_name": tp_name,
-                    "ingested_at": ingested_at,
-                    "value": current_value,
-                    "changed": False,  # Will be set by post-processing
-                    "previous_value": None,  # Will be set by post-processing
-                })
-                
+
+                history.append(
+                    {
+                        "tp_name": tp_name,
+                        "ingested_at": ingested_at,
+                        "value": current_value,
+                        "changed": False,  # Will be set by post-processing
+                        "previous_value": None,  # Will be set by post-processing
+                    }
+                )
+
                 previous_value = current_value
             else:
                 # Test doesn't exist in this TP (might be new or removed)
-                history.append({
-                    "tp_name": tp_name,
-                    "ingested_at": ingested_at,
-                    "value": None,
-                    "changed": False,
-                    "previous_value": None,
-                    "note": "Test not found in this TP",
-                })
-        
+                history.append(
+                    {
+                        "tp_name": tp_name,
+                        "ingested_at": ingested_at,
+                        "value": None,
+                        "changed": False,
+                        "previous_value": None,
+                        "note": "Test not found in this TP",
+                    }
+                )
+
         # Post-process: Mark NEWER TP as "changed" when its value differs from OLDER TP
         # Since we iterate newest→oldest, when history[i] differs from history[i+1],
         # the change happened in history[i] (the newer TP)
@@ -933,7 +1142,7 @@ class Tools:
                 if newer_tp["value"] != older_tp["value"]:
                     newer_tp["changed"] = True
                     newer_tp["previous_value"] = older_tp["value"]
-        
+
         return history
 
     def _format_attribute_change_answer(
@@ -945,40 +1154,48 @@ class Tools:
         """Format the attribute change history into a readable answer."""
         if not history:
             return f"No history found for {instance_name}."
-        
+
         # Find when the attribute last changed
         changes = [h for h in history if h.get("changed")]
         current = history[0] if history else None
-        
+
         lines = [f"📜 **{attribute.upper()}** change history for `{instance_name}`\n"]
-        
+
         if current:
-            lines.append(f"**Current value** (in {current['tp_name']}): `{current['value'] or 'N/A'}`\n")
-        
+            lines.append(
+                f"**Current value** (in {current['tp_name']}): `{current['value'] or 'N/A'}`\n"
+            )
+
         if changes:
             last_change = changes[0]  # Most recent change
             lines.append(f"**Last changed** in: `{last_change['tp_name']}`")
-            lines.append(f"- Previous value: `{last_change.get('previous_value', 'N/A')}`")
+            lines.append(
+                f"- Previous value: `{last_change.get('previous_value', 'N/A')}`"
+            )
             lines.append(f"- New value: `{last_change['value']}`\n")
-            
+
             if len(changes) > 1:
-                lines.append(f"**Total changes found**: {len(changes)} across {len(history)} TPs\n")
+                lines.append(
+                    f"**Total changes found**: {len(changes)} across {len(history)} TPs\n"
+                )
         else:
-            lines.append(f"**No changes detected** across {len(history)} TPs scanned.\n")
-        
+            lines.append(
+                f"**No changes detected** across {len(history)} TPs scanned.\n"
+            )
+
         # Show recent history table
         lines.append("| TP Name | Value | Changed |")
         lines.append("|---------|-------|---------|")
         for h in history[:10]:
-            value = h['value'] if h['value'] is not None else "(not present)"
+            value = h["value"] if h["value"] is not None else "(not present)"
             if len(str(value)) > 40:
                 value = str(value)[:37] + "..."
             changed_mark = "⚡ Yes" if h.get("changed") else "No"
             lines.append(f"| {h['tp_name']} | {value} | {changed_mark} |")
-        
+
         if len(history) > 10:
             lines.append(f"\n_...and {len(history) - 10} more TPs scanned_")
-        
+
         return "\n".join(lines)
 
     def _get_test_instance_details(
@@ -990,7 +1207,10 @@ class Tools:
         """Get full details for a specific test instance."""
         query = {
             "tp_document_id": ctx.tp_document_id,
-            "instance_name": {"$regex": f"^{re.escape(instance_name)}$", "$options": "i"},
+            "instance_name": {
+                "$regex": f"^{re.escape(instance_name)}$",
+                "$options": "i",
+            },
         }
         return test_collection.find_one(query)
 
@@ -1002,11 +1222,11 @@ class Tools:
         """Format test instance details into a readable response."""
         if not test_doc:
             return "Test instance not found."
-        
+
         instance_name = test_doc.get("instance_name", "Unknown")
         lines = [f"📋 **Test Instance Details** for `{instance_name}`\n"]
         lines.append(f"**Test Program**: `{tp_name}`\n")
-        
+
         # Define field display order and friendly names
         field_display = [
             ("status", "Status"),
@@ -1037,10 +1257,10 @@ class Tools:
             ("module_user", "Module User"),
             ("instance_user", "Instance User"),
         ]
-        
+
         lines.append("| Field | Value |")
         lines.append("|-------|-------|")
-        
+
         for field_name, display_name in field_display:
             value = test_doc.get(field_name)
             if value is not None and value != "":
@@ -1049,7 +1269,7 @@ class Tools:
                 if len(str_value) > 60:
                     str_value = str_value[:57] + "..."
                 lines.append(f"| {display_name} | `{str_value}` |")
-        
+
         return "\n".join(lines)
 
     def _extract_filter_value_from_question(
@@ -1058,26 +1278,26 @@ class Tools:
         attribute: str,
     ) -> Optional[str]:
         """Extract the filter value for a given attribute from the question.
-        
+
         Handles patterns like:
         - "list tests with status set to bypass"
         - "tests with level = levels_nom"
         - "tests where timing is timing_fast"
         """
         normalized = question.lower()
-        
+
         # Patterns to extract value after attribute mention
         patterns = [
             rf'{attribute}\s+(?:set\s+to|=|is|equals?|:)\s+["\']?([^\s"\']+)["\']?',
             rf'{attribute}\s+["\']?([^\s"\']+)["\']?',
             rf'(?:with|where|having)\s+{attribute}\s+["\']?([^\s"\']+)["\']?',
         ]
-        
+
         for pattern in patterns:
             match = re.search(pattern, normalized, re.IGNORECASE)
             if match:
                 return match.group(1).strip()
-        
+
         return None
 
     def _filter_tests_by_attribute(
@@ -1105,35 +1325,37 @@ class Tools:
     ) -> str:
         """Format filtered test results."""
         if not tests:
-            return f"No tests found with `{attribute}` matching `{value}` in `{tp_name}`."
-        
+            return (
+                f"No tests found with `{attribute}` matching `{value}` in `{tp_name}`."
+            )
+
         # Get friendly name for attribute
         friendly_names = {v: k.title() for k, v in self.FIELD_ALIASES.items()}
         attr_display = friendly_names.get(attribute, attribute)
-        
+
         lines = [f"🔍 **Tests with {attr_display} = `{value}`** in `{tp_name}`\n"]
         lines.append(f"**Found**: {len(tests)} test(s)\n")
-        
+
         # Show table with key columns
         lines.append("| Instance Name | Status | {attr} |".format(attr=attr_display))
         lines.append("|---------------|--------|--------|")
-        
+
         for test in tests[:limit]:
             name = test.get("instance_name", "Unknown")
             status = test.get("status", "")
             attr_val = test.get(attribute, "")
-            
+
             # Truncate long names
             if len(name) > 50:
                 name = name[:47] + "..."
             if len(str(attr_val)) > 30:
                 attr_val = str(attr_val)[:27] + "..."
-            
+
             lines.append(f"| {name} | {status} | {attr_val} |")
-        
+
         if len(tests) > limit:
             lines.append(f"\n_...and {len(tests) - limit} more tests_")
-        
+
         return "\n".join(lines)
 
     def _normalize_identifiers(
@@ -1185,7 +1407,7 @@ class Tools:
         min_token_overlap: int = 2,
     ) -> Optional[dict]:
         """Infer product from question text.
-        
+
         Args:
             product_collection: MongoDB collection of product configs
             question: The user's question text
@@ -1197,8 +1419,10 @@ class Tools:
         normalized = question.lower()
         question_tokens = set(self._tokenize(question))
         candidates: List[Tuple[int, dict]] = []
-        all_products = list(product_collection.find({}, {"product_code": 1, "product_name": 1}))
-        
+        all_products = list(
+            product_collection.find({}, {"product_code": 1, "product_name": 1})
+        )
+
         for row in all_products:
             name = (row.get("product_name") or "").strip()
             code = (row.get("product_code") or "").strip()
@@ -1210,7 +1434,7 @@ class Tools:
             # Also check if product code appears in question
             if code and code.lower() in normalized:
                 return row
-            
+
         # Fuzzy token matching
         for row in all_products:
             name = (row.get("product_name") or "").strip()
@@ -1221,7 +1445,7 @@ class Tools:
                 continue
             overlap = name_tokens & question_tokens
             overlap_count = len(overlap)
-            
+
             if overlap_count >= min_token_overlap:
                 # Standard fuzzy match with enough overlap
                 candidates.append((overlap_count, row))
@@ -1230,7 +1454,13 @@ class Tools:
                 # Check if this token uniquely identifies this product
                 matching_token = list(overlap)[0]
                 # Skip common words like "cpu", "u", etc.
-                if len(matching_token) <= 2 or matching_token in {"cpu", "gpu", "soc", "test", "program"}:
+                if len(matching_token) <= 2 or matching_token in {
+                    "cpu",
+                    "gpu",
+                    "soc",
+                    "test",
+                    "program",
+                }:
                     continue
                 # Check if this token appears in other product names
                 is_unique = True
@@ -1244,7 +1474,7 @@ class Tools:
                         break
                 if is_unique:
                     candidates.append((overlap_count, row))
-                    
+
         if not candidates:
             return None
         candidates.sort(key=lambda item: item[0], reverse=True)
@@ -1402,10 +1632,15 @@ class Tools:
             if product_code:
                 product_filter["product_code"] = product_code
             elif product_name_hint:
-                product_filter["product_name"] = {"$regex": product_name_hint, "$options": "i"}
+                product_filter["product_name"] = {
+                    "$regex": product_name_hint,
+                    "$options": "i",
+                }
             else:
                 # Try fuzzy match on question
-                fuzzy_match = self._infer_product_from_question(product_collection, question)
+                fuzzy_match = self._infer_product_from_question(
+                    product_collection, question
+                )
                 if fuzzy_match:
                     product_filter["product_code"] = fuzzy_match.get("product_code")
             if product_filter:
@@ -1439,7 +1674,7 @@ class Tools:
 
         attempts: List[Tuple[Dict[str, Any], Optional[str]]] = []
         base_query: Dict[str, Any] = {"$and": conditions} if conditions else {}
-        
+
         # Only add base_query as first attempt if it has actual conditions
         # Otherwise we'll rely on fuzzy matching below
         if conditions:
@@ -1847,29 +2082,37 @@ class Tools:
         return list(collection_handle.aggregate(pipeline))
 
     # Answer generators -----------------------------------------------------------------
-    def _format_list_products_answer(
-        self, product_collection: MongoCollection
-    ) -> str:
+    def _format_list_products_answer(self, product_collection: MongoCollection) -> str:
         """Format list of all available products."""
-        products = list(product_collection.find({}, {
-            "product_code": 1, "product_name": 1, "latest_tp": 1, "number_of_releases": 1
-        }).sort("product_name", 1))
-        
+        products = list(
+            product_collection.find(
+                {},
+                {
+                    "product_code": 1,
+                    "product_name": 1,
+                    "latest_tp": 1,
+                    "number_of_releases": 1,
+                },
+            ).sort("product_name", 1)
+        )
+
         if not products:
             return "❌ No products configured in the system."
-        
+
         lines = [f"📦 **Available Products** ({len(products)} total)\n"]
         lines.append("| Product Code | Product Name | Latest TP | Releases |")
         lines.append("|--------------|--------------|-----------|----------|")
-        
+
         for p in products:
             code = p.get("product_code", "?")
             name = p.get("product_name", "Unknown")
             latest = p.get("latest_tp", "N/A")
             releases = p.get("number_of_releases", 0)
             lines.append(f"| {code} | {name} | {latest} | {releases} |")
-        
-        lines.append("\n_Ask about a specific product by name or code, e.g., 'What is the yield for PantherLake CPU-U?'_")
+
+        lines.append(
+            "\n_Ask about a specific product by name or code, e.g., 'What is the yield for PantherLake CPU-U?'_"
+        )
         return "\n".join(lines)
 
     def _format_list_releases_answer(
@@ -1882,57 +2125,63 @@ class Tools:
         """Format list of test programs/releases for a product."""
         # Get product config for the list of releases
         product_doc = product_collection.find_one({"product_code": product_code})
-        
+
         if not product_doc:
             return f"❌ No product found with code `{product_code}`."
-        
+
         # Field is called "releases" in MongoDB
         releases = product_doc.get("releases", []) or []
         latest = product_doc.get("latest_tp", "")
         num_releases = product_doc.get("number_of_releases", len(releases))
-        
+
         # If no releases in product_configs, get from ingest_artifacts
         ingested_tps: Dict[str, datetime] = {}
         for doc in ingest_collection.find(
-            {"$or": [
-                {"product.product_code": product_code},
-                {"metadata.product_code": product_code},
-            ]},
-            {"tp_name": 1, "ingested_at": 1}
+            {
+                "$or": [
+                    {"product.product_code": product_code},
+                    {"metadata.product_code": product_code},
+                ]
+            },
+            {"tp_name": 1, "ingested_at": 1},
         ):
             tp = doc.get("tp_name", "")
             if tp:
                 ingested_tps[tp.upper()] = doc.get("ingested_at")
-        
+
         if not releases and ingested_tps:
             # Fall back to ingested TPs sorted by name (using TP naming convention)
-            releases = sorted(ingested_tps.keys(), key=self._tp_name_sort_key, reverse=True)
+            releases = sorted(
+                ingested_tps.keys(), key=self._tp_name_sort_key, reverse=True
+            )
             num_releases = len(releases)
             latest = releases[0] if releases else ""
-        
+
         lines = [f"📋 **Test Programs for {product_name}** ({product_code})\n"]
         lines.append(f"**Total releases**: {num_releases}")
         if latest:
             lines.append(f"**Latest TP**: `{latest}`\n")
         else:
             lines.append("**Latest TP**: _None configured_\n")
-        
+
         if releases:
             lines.append("| # | Test Program | Status |")
             lines.append("|---|--------------|--------|")
-            
+
             for i, tp in enumerate(releases[:30], 1):
-                status = "✅ Ingested" if tp.upper() in ingested_tps else "⏳ Not ingested"
+                status = (
+                    "✅ Ingested" if tp.upper() in ingested_tps else "⏳ Not ingested"
+                )
                 if tp.upper() == latest.upper():
                     lines.append(f"| {i} | `{tp}` | {status} ⭐ Latest |")
                 else:
                     lines.append(f"| {i} | `{tp}` | {status} |")
-            
+
             if len(releases) > 30:
                 lines.append(f"\n_...and {len(releases) - 30} more releases_")
         else:
             lines.append("_No releases tracked or ingested for this product._")
-        
+
         return "\n".join(lines)
 
     def _format_tp_info_answer(
@@ -1943,27 +2192,35 @@ class Tools:
     ) -> str:
         """Format information about a specific test program."""
         # Find the TP in ingest_artifacts
-        doc = ingest_collection.find_one({"tp_name": {"$regex": f"^{re.escape(tp_name)}$", "$options": "i"}})
-        
+        doc = ingest_collection.find_one(
+            {"tp_name": {"$regex": f"^{re.escape(tp_name)}$", "$options": "i"}}
+        )
+
         if not doc:
             return (
                 f"❌ No information found for test program `{tp_name}`.\n\n"
                 "This TP may not have been ingested yet. Check available releases for a product "
                 "using 'What test programs do you have for [product name]?'"
             )
-        
+
         tp_name_actual = doc.get("tp_name", tp_name)
         git_hash = doc.get("git_hash", "unknown")
         ingested_at = doc.get("ingested_at")
         metadata = doc.get("metadata", {}) or {}
         product_blob = doc.get("product", {}) or {}
-        
-        product_code = product_blob.get("product_code") or metadata.get("product_code") or "?"
-        product_name = product_blob.get("product_name") or metadata.get("product_name") or "Unknown"
-        
+
+        product_code = (
+            product_blob.get("product_code") or metadata.get("product_code") or "?"
+        )
+        product_name = (
+            product_blob.get("product_name")
+            or metadata.get("product_name")
+            or "Unknown"
+        )
+
         # Count test instances
         test_count = test_collection.count_documents({"tp_document_id": doc["_id"]})
-        
+
         # Get status breakdown
         status_pipeline = [
             {"$match": {"tp_document_id": doc["_id"]}},
@@ -1971,25 +2228,29 @@ class Tools:
             {"$sort": {"count": -1}},
         ]
         status_breakdown = list(test_collection.aggregate(status_pipeline))
-        
+
         lines = [f"✅ **Test Program Found**: `{tp_name_actual}`\n"]
         lines.append(f"**Product**: {product_name} ({product_code})")
         lines.append(f"**Git Hash**: `{git_hash}`")
-        lines.append(f"**Ingested**: {ingested_at.isoformat() if ingested_at else 'Unknown'}")
+        lines.append(
+            f"**Ingested**: {ingested_at.isoformat() if ingested_at else 'Unknown'}"
+        )
         lines.append(f"**Total Test Instances**: {test_count:,}\n")
-        
+
         if status_breakdown:
             lines.append("**Test Status Breakdown**:")
             for s in status_breakdown[:6]:
                 status = s.get("_id", "Unknown")
                 count = s.get("count", 0)
                 lines.append(f"  - {status}: {count:,}")
-        
+
         flow_tables = metadata.get("flow_table_names", [])
         if flow_tables:
             lines.append(f"\n**Flow Tables**: {', '.join(flow_tables[:5])}")
-        
-        lines.append(f"\n_You can now ask questions about this TP, e.g., 'What tests are in {tp_name_actual}?'_")
+
+        lines.append(
+            f"\n_You can now ask questions about this TP, e.g., 'What tests are in {tp_name_actual}?'_"
+        )
         return "\n".join(lines)
 
     def _format_current_tp_answer(
@@ -2144,18 +2405,26 @@ class Tools:
         __event_emitter__: Optional[Callable[[dict], Any]] = None,
         __user__: Optional[dict] = None,
     ) -> str:
+        """
+        Answer questions about HDMT test programs by querying MongoDB collections.
+        
+        :param question: Natural language question about test programs
+        :param product_code: Optional product code (e.g., "8PXM")
+        :param tp_name: Optional test program name
+        :return: Answer with source citations
+        """
         emitter = EventEmitter(__event_emitter__)
         if not question.strip():
-            await emitter.error("Please provide a question so I know what to retrieve.")
-            return "Provide a question about the test program (e.g., 'What is the current test program?')."
+            await emitter.emit("⚠️ No question provided", "complete", done=True)
+            return f"Please provide a question so I know what to retrieve.\n\n{self._get_usage_guidance()}"
 
         user_valves = self.UserValves()
         client = self._get_mongo_client(user_valves)
         if client is None:
-            await emitter.error(
-                "Mongo connection unavailable. Hardcoded URI returned no client."
+            await emitter.emit(
+                "❌ Mongo connection unavailable", "error", done=True
             )
-            return "Mongo connection is not configured."
+            return f"Mongo connection is not configured.\n\n{self._get_usage_guidance()}"
 
         product_code = (
             product_code or user_valves.product_code or self.valves.default_product_code
@@ -2164,23 +2433,33 @@ class Tools:
 
         ingest_collection = self._get_collection(client, INGEST_COLLECTION)
         product_collection = self._get_collection(client, PRODUCT_COLLECTION)
-        
+
         # Early classification check - some questions don't need product/TP identification
         early_classification = QuestionClassifier.classify(question)
         no_product_required = {"list_products", "tp_info"}
-        
+
         # Early validation: Check if we can identify a product from the question
         # If no product_code or tp_name provided, try to infer from question
         inferred_product = None
-        if not product_code and not tp_name and early_classification not in no_product_required:
-            inferred_product = self._infer_product_from_question(product_collection, question)
+        if (
+            not product_code
+            and not tp_name
+            and early_classification not in no_product_required
+        ):
+            inferred_product = self._infer_product_from_question(
+                product_collection, question
+            )
             # Also check if there's a TP name in the question
             tp_hint = self._extract_tp_name_hint(question)
             if not inferred_product and not tp_hint:
                 # Cannot identify what product/TP the user is asking about
-                suggestions = self._candidate_product_suggestions(product_collection, question, limit=6)
+                suggestions = self._candidate_product_suggestions(
+                    product_collection, question, limit=6
+                )
                 if not suggestions:
-                    suggestions = self._candidate_product_suggestions(product_collection, "", limit=6)
+                    suggestions = self._candidate_product_suggestions(
+                        product_collection, "", limit=6
+                    )
                 suggestion_list = "\n".join(f"- {s}" for s in suggestions)
                 error_msg = (
                     "I couldn't determine which product or test program you're asking about.\n\n"
@@ -2192,7 +2471,7 @@ class Tools:
                 )
                 await emitter.error(error_msg)
                 return error_msg
-        
+
         product_code, tp_name = self._normalize_identifiers(
             product_collection,
             question,
@@ -2203,18 +2482,25 @@ class Tools:
 
         # Handle inventory/catalog questions that don't require a specific TP context
         test_collection = self._get_collection(client, TEST_INSTANCES_COLLECTION)
-        
+
         if classification == "list_products":
             # List all available products
-            await emitter.progress("Fetching available products...")
+            await emitter.progress("📦 Fetching available products...")
             answer = self._format_list_products_answer(product_collection)
-            await emitter.success("Products listed")
+            await emitter.citation(
+                title="TPFrontDesk: Product Catalog",
+                url="mongodb://tpfrontdesk/product_configs",
+                content="Product configuration catalog from TPFrontDesk MongoDB database",
+            )
+            await emitter.emit("✅ Products listed", "complete", done=True)
             return answer
-        
+
         if classification == "list_releases":
             # List test programs for a specific product
             if not product_code and not inferred_product:
-                inferred_product = self._infer_product_from_question(product_collection, question)
+                inferred_product = self._infer_product_from_question(
+                    product_collection, question
+                )
             if inferred_product:
                 product_code = inferred_product.get("product_code", "")
                 product_name = inferred_product.get("product_name", "")
@@ -2222,56 +2508,85 @@ class Tools:
                 prod_doc = product_collection.find_one({"product_code": product_code})
                 product_name = prod_doc.get("product_name", "") if prod_doc else ""
             else:
-                suggestions = self._candidate_product_suggestions(product_collection, question, limit=6)
+                suggestions = self._candidate_product_suggestions(
+                    product_collection, question, limit=6
+                )
                 suggestion_list = "\n".join(f"- {s}" for s in suggestions)
+                await emitter.emit("⚠️ Product not specified", "complete", done=True)
                 return (
                     "Please specify which product you'd like to see releases for.\n\n"
-                    f"Available products:\n{suggestion_list}"
+                    f"Available products:\n{suggestion_list}\n\n"
+                    f"{self._get_usage_guidance()}"
                 )
-            await emitter.progress(f"Fetching releases for {product_name}...")
+            await emitter.progress(f"📋 Fetching releases for {product_name}...")
             answer = self._format_list_releases_answer(
                 product_collection, ingest_collection, product_code, product_name
             )
-            await emitter.success("Releases listed")
+            await emitter.citation(
+                title=f"TPFrontDesk: {product_name} Releases",
+                url=f"mongodb://tpfrontdesk/product_configs/{product_code}",
+                content=f"Test program releases for {product_name} ({product_code}) from TPFrontDesk database",
+            )
+            await emitter.emit("✅ Releases listed", "complete", done=True)
             return answer
-        
+
         if classification == "tp_info":
             # Check info on a specific test program
             tp_hint = self._extract_tp_name_hint(question)
             if not tp_hint:
+                await emitter.emit("⚠️ TP name not specified", "complete", done=True)
                 return (
                     "Please specify the test program name you're asking about.\n\n"
-                    "Example: 'Do you have information on PTUSDJXA1H21J412603?'"
+                    "Example: 'Do you have information on PTUSDJXA1H21J412603?'\n\n"
+                    f"{self._get_usage_guidance()}"
                 )
-            await emitter.progress(f"Looking up {tp_hint}...")
-            answer = self._format_tp_info_answer(ingest_collection, test_collection, tp_hint)
-            await emitter.success("TP info retrieved")
+            await emitter.progress(f"🔍 Looking up {tp_hint}...")
+            answer = self._format_tp_info_answer(
+                ingest_collection, test_collection, tp_hint
+            )
+            await emitter.citation(
+                title=f"TPFrontDesk: {tp_hint}",
+                url=f"mongodb://tpfrontdesk/ingest_artifacts/{tp_hint}",
+                content=f"Test program metadata for {tp_hint} from TPFrontDesk ingest_artifacts collection",
+            )
+            await emitter.emit("✅ TP info retrieved", "complete", done=True)
             return answer
 
         # ProductXi classifications don't require a full TP context, just product info
         productxi_classifications = {
-            "yield_metrics", "dominant_fail", "production_summary", 
-            "resort_rate", "prq_status"
+            "yield_metrics",
+            "dominant_fail",
+            "production_summary",
+            "resort_rate",
+            "prq_status",
         }
-        
+
         ctx: Optional[TPContext] = None
         if classification in productxi_classifications:
             # For ProductXi queries, we only need product_code and product_name
             # Try to get product info without requiring an ingested TP
             if not product_code:
                 # Try fuzzy match to get product info
-                fuzzy_match = self._infer_product_from_question(product_collection, question)
+                fuzzy_match = self._infer_product_from_question(
+                    product_collection, question
+                )
                 if fuzzy_match:
                     product_code = fuzzy_match.get("product_code", "")
                     product_name = fuzzy_match.get("product_name", "")
                 else:
-                    await emitter.error("Could not determine product from question. Please specify a product name.")
+                    await emitter.error(
+                        "Could not determine product from question. Please specify a product name."
+                    )
                     return "Could not determine product from question. Please specify a product name like 'PantherLake CPU-U'."
             else:
                 # Look up product name from product_code
-                product_doc = product_collection.find_one({"product_code": product_code})
-                product_name = product_doc.get("product_name", "") if product_doc else ""
-            
+                product_doc = product_collection.find_one(
+                    {"product_code": product_code}
+                )
+                product_name = (
+                    product_doc.get("product_name", "") if product_doc else ""
+                )
+
             # Create a minimal context for ProductXi queries
             ctx = TPContext(
                 tp_document_id="",
@@ -2300,11 +2615,11 @@ class Tools:
                 guidance = str(exc)
                 if suggestion_lines:
                     guidance = f"{guidance}\nTry one of these products next time:\n{suggestion_lines}"
-                await emitter.error(guidance)
-                return guidance
+                await emitter.emit("⚠️ Could not resolve product/TP", "complete", done=True)
+                return f"{guidance}\n\n{self._get_usage_guidance()}"
             except ValueError as exc:
-                await emitter.error(str(exc))
-                return str(exc)
+                await emitter.emit(f"⚠️ {exc}", "complete", done=True)
+                return f"{exc}\n\n{self._get_usage_guidance()}"
 
         await emitter.progress(
             f"Resolved context: {ctx.tp_name} ({ctx.product_code or 'unknown product'})"
@@ -2465,7 +2780,10 @@ class Tools:
                         "$options": "i",
                     },
                     "status": {"$ne": "Bypassed"},
-                    "test_type": {"$regex": "^PrimePatConfigTestMethod$", "$options": "i"},
+                    "test_type": {
+                        "$regex": "^PrimePatConfigTestMethod$",
+                        "$options": "i",
+                    },
                     "test_type_detail": {"$regex": "^FUSECONFIG$", "$options": "i"},
                 }
                 rows = self._fetch_test_rows(
@@ -2476,7 +2794,8 @@ class Tools:
                 )
                 # Filter out REPAIR_RESET in post-processing
                 rows = [
-                    r for r in rows
+                    r
+                    for r in rows
                     if "repair_reset" not in (r.get("instance_name") or "").lower()
                 ]
                 if rows:
@@ -2505,7 +2824,10 @@ class Tools:
                         "$options": "i",
                     },
                     "status": {"$ne": "Bypassed"},
-                    "test_type": {"$regex": "^PrimePatConfigTestMethod$", "$options": "i"},
+                    "test_type": {
+                        "$regex": "^PrimePatConfigTestMethod$",
+                        "$options": "i",
+                    },
                     "test_type_detail": {"$regex": "^FUSECONFIG$", "$options": "i"},
                     "subflow": {"$regex": "SDT", "$options": "i"},
                 }
@@ -2517,7 +2839,8 @@ class Tools:
                 )
                 # Filter out REPAIR_RESET in post-processing
                 rows = [
-                    r for r in rows
+                    r
+                    for r in rows
                     if "repair_reset" not in (r.get("instance_name") or "").lower()
                 ]
                 if rows:
@@ -2541,19 +2864,23 @@ class Tools:
                 # Q12: Query test_instances for subflow containing 'SDT'
                 # First, get aggregated counts per SDT subflow
                 pipeline = [
-                    {"$match": {
-                        "tp_document_id": ctx.tp_document_id,
-                        "subflow": {"$regex": "SDT", "$options": "i"},
-                    }},
-                    {"$group": {
-                        "_id": "$subflow",
-                        "count": {"$sum": 1},
-                    }},
+                    {
+                        "$match": {
+                            "tp_document_id": ctx.tp_document_id,
+                            "subflow": {"$regex": "SDT", "$options": "i"},
+                        }
+                    },
+                    {
+                        "$group": {
+                            "_id": "$subflow",
+                            "count": {"$sum": 1},
+                        }
+                    },
                     {"$sort": {"_id": 1}},
                 ]
                 subflow_agg = list(test_collection.aggregate(pipeline))
                 total_sdt_count = sum(item["count"] for item in subflow_agg)
-                
+
                 # Fetch sample rows
                 filters: Dict[str, Any] = {
                     "subflow": {"$regex": "SDT", "$options": "i"},
@@ -2565,7 +2892,7 @@ class Tools:
                     limit=self.valves.max_test_instance_rows,
                     sort_field="instance_name",
                 )
-                
+
                 if rows or subflow_agg:
                     answer_lines.append(
                         f"📊 SDT flow content: {total_sdt_count} total test(s) across {len(subflow_agg)} SDT subflow(s)"
@@ -2642,11 +2969,11 @@ class Tools:
                 instance_name = self._extract_test_instance_from_question(
                     question, test_collection, ctx
                 )
-                
+
                 if not attribute:
                     # Default to plist if not specified
                     attribute = "plist"
-                
+
                 if not instance_name:
                     # Try to find a test name pattern more aggressively
                     # Look for module::test or long test names in question
@@ -2666,7 +2993,9 @@ class Tools:
                         max_history=30,
                     )
                     answer_lines.append(
-                        self._format_attribute_change_answer(instance_name, attribute, history)
+                        self._format_attribute_change_answer(
+                            instance_name, attribute, history
+                        )
                     )
 
             elif classification == "test_details":
@@ -2674,7 +3003,7 @@ class Tools:
                 instance_name = self._extract_test_instance_from_question(
                     question, test_collection, ctx
                 )
-                
+
                 if not instance_name:
                     answer_lines.append(
                         "❓ I couldn't identify the test instance name from your question.\n\n"
@@ -2688,7 +3017,9 @@ class Tools:
                     )
                     if test_doc:
                         answer_lines.append(
-                            self._format_test_details(test_doc, ctx.tp_name or "Unknown TP")
+                            self._format_test_details(
+                                test_doc, ctx.tp_name or "Unknown TP"
+                            )
                         )
                     else:
                         answer_lines.append(
@@ -2698,7 +3029,7 @@ class Tools:
             elif classification == "filter_tests":
                 # Filter tests by a specific attribute value (e.g., "list tests with status bypass")
                 attribute = self._extract_attribute_from_question(question)
-                
+
                 if not attribute:
                     # Try to detect what attribute they're filtering by
                     answer_lines.append(
@@ -2709,17 +3040,25 @@ class Tools:
                         "- `show tests with subflow containing SDT`"
                     )
                 else:
-                    filter_value = self._extract_filter_value_from_question(question, attribute)
-                    
+                    filter_value = self._extract_filter_value_from_question(
+                        question, attribute
+                    )
+
                     # Check for common filter values in the question
                     if not filter_value:
                         # Try to find value without attribute prefix
-                        common_values = ["bypass", "bypassed", "enabled", "disabled", "active"]
+                        common_values = [
+                            "bypass",
+                            "bypassed",
+                            "enabled",
+                            "disabled",
+                            "active",
+                        ]
                         for cv in common_values:
                             if cv in question.lower():
                                 filter_value = cv
                                 break
-                    
+
                     if not filter_value:
                         answer_lines.append(
                             f"❓ I found you want to filter by `{attribute}`, but couldn't determine the value.\n\n"
@@ -2728,12 +3067,17 @@ class Tools:
                         )
                     else:
                         tests = self._filter_tests_by_attribute(
-                            test_collection, ctx, attribute, filter_value,
+                            test_collection,
+                            ctx,
+                            attribute,
+                            filter_value,
                             limit=self.valves.max_test_instance_rows,
                         )
                         answer_lines.append(
                             self._format_filtered_tests(
-                                tests, attribute, filter_value,
+                                tests,
+                                attribute,
+                                filter_value,
                                 ctx.tp_name or "Unknown TP",
                                 limit=self.valves.max_test_instance_rows,
                             )
@@ -2745,7 +3089,11 @@ class Tools:
                 last_n_weeks = self._extract_weeks_count_from_question(question)
                 if work_week is None:
                     work_week = self._extract_relative_work_week_from_question(question)
-                if work_week is None and last_n_weeks is None and self._looks_like_trend_question(question):
+                if (
+                    work_week is None
+                    and last_n_weeks is None
+                    and self._looks_like_trend_question(question)
+                ):
                     # If the user asks for a trend without specifying a time window,
                     # default to a reasonable multi-week view.
                     last_n_weeks = 8
@@ -2755,7 +3103,9 @@ class Tools:
                     last_n_weeks=last_n_weeks,
                 )
                 answer_lines.append(
-                    self._format_yield_metrics(xi_rows, ctx.product_name or ctx.product_code or "product")
+                    self._format_yield_metrics(
+                        xi_rows, ctx.product_name or ctx.product_code or "product"
+                    )
                 )
 
             elif classification == "dominant_fail":
@@ -2770,7 +3120,9 @@ class Tools:
                     last_n_weeks=last_n_weeks,
                 )
                 answer_lines.append(
-                    self._format_dominant_fail(xi_rows, ctx.product_name or ctx.product_code or "product")
+                    self._format_dominant_fail(
+                        xi_rows, ctx.product_name or ctx.product_code or "product"
+                    )
                 )
 
             elif classification == "production_summary":
@@ -2785,7 +3137,9 @@ class Tools:
                     last_n_weeks=last_n_weeks,
                 )
                 answer_lines.append(
-                    self._format_production_summary(xi_rows, ctx.product_name or ctx.product_code or "product")
+                    self._format_production_summary(
+                        xi_rows, ctx.product_name or ctx.product_code or "product"
+                    )
                 )
 
             elif classification == "resort_rate":
@@ -2800,7 +3154,9 @@ class Tools:
                     last_n_weeks=last_n_weeks,
                 )
                 answer_lines.append(
-                    self._format_resort_rate(xi_rows, ctx.product_name or ctx.product_code or "product")
+                    self._format_resort_rate(
+                        xi_rows, ctx.product_name or ctx.product_code or "product"
+                    )
                 )
 
             elif classification == "prq_status":
@@ -2815,7 +3171,9 @@ class Tools:
                     last_n_weeks=last_n_weeks,
                 )
                 answer_lines.append(
-                    self._format_prq_status(xi_rows, ctx.product_name or ctx.product_code or "product")
+                    self._format_prq_status(
+                        xi_rows, ctx.product_name or ctx.product_code or "product"
+                    )
                 )
 
             else:
@@ -2838,14 +3196,32 @@ class Tools:
                 if answer_lines
                 else "I could not build a response."
             )
-            await emitter.success("Answer ready")
+            
+            # Emit citations for data sources
+            if ctx:
+                # Citation for TPFrontDesk MongoDB
+                await emitter.citation(
+                    title=f"TPFrontDesk: {ctx.tp_name}",
+                    url=f"mongodb://tpfrontdesk/{ctx.tp_document_id}",
+                    content=f"Test Program: {ctx.tp_name}\nProduct: {ctx.product_name or ctx.product_code}\nGit Hash: {ctx.git_hash}\nIngested: {ctx.ingested_at.isoformat() if ctx.ingested_at else 'Unknown'}",
+                )
+            
+            # Add ProductXi citation for production metrics queries
+            if classification in productxi_classifications:
+                await emitter.citation(
+                    title=f"ProductXi: {ctx.product_name or ctx.product_code if ctx else 'Product'}",
+                    url="mongodb://productXi/ProductXi_PROD",
+                    content=f"Production metrics from ProductXi database for {ctx.product_name or ctx.product_code if ctx else 'the requested product'}",
+                )
+            
+            await emitter.emit("✅ Answer ready", "complete", done=True)
             return result
         except PyMongoError as exc:
-            await emitter.error(f"Mongo query failed: {exc}")
-            return f"Mongo query failed: {exc}"
+            await emitter.emit(f"❌ Mongo query failed: {exc}", "error", done=True)
+            return f"Mongo query failed: {exc}\n\n{self._get_usage_guidance()}"
         except Exception as exc:  # pragma: no cover - defensive coding
-            await emitter.error(str(exc))
-            return str(exc)
+            await emitter.emit(f"❌ Error: {exc}", "error", done=True)
+            return f"An error occurred: {exc}\n\n{self._get_usage_guidance()}"
 
 
 if __name__ == "__main__":  # pragma: no cover - manual smoke test
