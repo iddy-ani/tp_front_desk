@@ -151,9 +151,19 @@
           "last_processed": "2026-01-19T19:46:23.252852+00:00",
           "git_hash": "14241be939a3f3b05f8c3910ddeb98a315d45b77",
           "mongo_doc_id": "PTUSDJXA1H21J422603:14241be939a3f3b05f8c3910ddeb98a315d45b77"
+        },
+        "PTUSDJXA1H21K412605": {
+          "last_processed": "2026-01-29T22:24:40.183812+00:00",
+          "git_hash": "fb92d8c7c65efb75c94ce87ef8bfb0429f3fd03a",
+          "mongo_doc_id": "PTUSDJXA1H21K412605:fb92d8c7c65efb75c94ce87ef8bfb0429f3fd03a"
+        },
+        "PTUSDJXA1H21K402604": {
+          "last_processed": "2026-01-29T22:25:49.890227+00:00",
+          "git_hash": "846e05417c277e2eef91bddabd5bbfc72ba8a874",
+          "mongo_doc_id": "PTUSDJXA1H21K402604:846e05417c277e2eef91bddabd5bbfc72ba8a874"
         }
       },
-      "last_scan": "2026-01-19T19:46:23.252852+00:00"
+      "last_scan": "2026-01-29T22:25:49.890227+00:00"
     },
     "8PH7": {
       "processed_tps": {
@@ -221,9 +231,19 @@
           "last_processed": "2026-01-19T20:29:07.223131+00:00",
           "git_hash": "655806266c829d48e2834ef01374ebcea57f20e8",
           "mongo_doc_id": "WCLSDJXA0H60N212537:655806266c829d48e2834ef01374ebcea57f20e8"
+        },
+        "WCLSDJXA1H61F412605": {
+          "last_processed": "2026-01-29T22:27:25.581088+00:00",
+          "git_hash": "b1a41d2e7ebb5494860d1d379b464d7f23f972e2",
+          "mongo_doc_id": "WCLSDJXA1H61F412605:b1a41d2e7ebb5494860d1d379b464d7f23f972e2"
+        },
+        "WCLSDJXA1H61F402605": {
+          "last_processed": "2026-01-29T22:28:39.379644+00:00",
+          "git_hash": "8c7bd69a5aee37605bb325ec87ceb7478c488c80",
+          "mongo_doc_id": "WCLSDJXA1H61F402605:8c7bd69a5aee37605bb325ec87ceb7478c488c80"
         }
       },
-      "last_scan": "2026-01-19T20:29:07.223131+00:00"
+      "last_scan": "2026-01-29T22:28:39.379644+00:00"
     },
     "8PON": {
       "processed_tps": {
@@ -386,9 +406,14 @@
           "last_processed": "2026-01-19T20:58:10.584752+00:00",
           "git_hash": "6c3c32068ea97d716f167ebbd6779e04f3adb5e0",
           "mongo_doc_id": "PTLSDJXB0H31J312526:6c3c32068ea97d716f167ebbd6779e04f3adb5e0"
+        },
+        "PTLSDJXB0H31V412604": {
+          "last_processed": "2026-01-29T22:30:17.887413+00:00",
+          "git_hash": "91fa3c6dc6af8892a67f921ad1d089c1893797af",
+          "mongo_doc_id": "PTLSDJXB0H31V412604:91fa3c6dc6af8892a67f921ad1d089c1893797af"
         }
       },
-      "last_scan": "2026-01-19T20:58:10.584752+00:00"
+      "last_scan": "2026-01-29T22:30:17.887413+00:00"
     },
     "8PXN": {
       "processed_tps": {
@@ -486,9 +511,14 @@
           "last_processed": "2026-01-19T21:04:02.569613+00:00",
           "git_hash": "0421071bce971f19ed6af3026ea12c5f3a265121",
           "mongo_doc_id": "PTGSDJXA0H70H202524:0421071bce971f19ed6af3026ea12c5f3a265121"
+        },
+        "PTGSDJXA2H71G412604": {
+          "last_processed": "2026-01-29T22:31:03.432589+00:00",
+          "git_hash": "89e213a5135fc9558f13140f9df53ad76dbf850b",
+          "mongo_doc_id": "PTGSDJXA2H71G412604:89e213a5135fc9558f13140f9df53ad76dbf850b"
         }
       },
-      "last_scan": "2026-01-19T21:04:02.569613+00:00"
+      "last_scan": "2026-01-29T22:31:03.432589+00:00"
     },
     "8PK7": {
       "processed_tps": {
@@ -606,9 +636,19 @@
           "last_processed": "2026-01-19T21:10:00.694101+00:00",
           "git_hash": "a4d34941a129fee72b2cac439888cb73161a0c07",
           "mongo_doc_id": "NGPSDJXA0H00C00AIRS:a4d34941a129fee72b2cac439888cb73161a0c07"
+        },
+        "NGPSDJXA0H50D062605": {
+          "last_processed": "2026-01-29T22:32:16.079600+00:00",
+          "git_hash": "d3baf9441fe44115803afd716fb557fef1cafa1b",
+          "mongo_doc_id": "NGPSDJXA0H50D062605:d3baf9441fe44115803afd716fb557fef1cafa1b"
+        },
+        "NGPSDJXA0H50D052604": {
+          "last_processed": "2026-01-29T22:32:43.395225+00:00",
+          "git_hash": "8979d26a04f1eb61c7bd2dbd34a6c877631252d2",
+          "mongo_doc_id": "NGPSDJXA0H50D052604:8979d26a04f1eb61c7bd2dbd34a6c877631252d2"
         }
       },
-      "last_scan": "2026-01-19T21:10:00.694101+00:00"
+      "last_scan": "2026-01-29T22:32:43.395225+00:00"
     },
     "8PF7": {
       "processed_tps": {
@@ -1031,9 +1071,14 @@
           "last_processed": "2026-01-27T15:19:09.848255+00:00",
           "git_hash": "c71b8017099b28c374c3c7bb546849c249163270",
           "mongo_doc_id": "NHHSDJXA0H30M00AIRS:c71b8017099b28c374c3c7bb546849c249163270"
+        },
+        "NHHSDJXA0H60T202605": {
+          "last_processed": "2026-01-29T22:34:53.897198+00:00",
+          "git_hash": "7c2b3fe9ec17524bf79976cecf50cb553c5d8540",
+          "mongo_doc_id": "NHHSDJXA0H60T202605:7c2b3fe9ec17524bf79976cecf50cb553c5d8540"
         }
       },
-      "last_scan": "2026-01-27T15:19:09.848255+00:00"
+      "last_scan": "2026-01-29T22:34:53.897198+00:00"
     }
   }
 }

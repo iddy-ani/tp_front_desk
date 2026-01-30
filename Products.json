@@ -3,9 +3,11 @@
         "ProductCode": "8PXM",
         "ProductName": "PantherLake CPU-U",
         "NetworkPath": "\\\\alpfile3.al.intel.com\\sdx_ods\\program\\1278\\prod\\hdmtprogs\\ptl_ptu_sds",
-        "LatestTP": "PTUSDJXA1H21J422603",
-        "NumberOfReleases": 30,
+        "LatestTP": "PTUSDJXA1H21K412605",
+        "NumberOfReleases": 32,
         "ListOfReleases": [
+            "PTUSDJXA1H21K412605",
+            "PTUSDJXA1H21K402604",
             "PTUSDJXA1H21J422603",
             "PTUSDJXA1H21J412603",
             "PTUSDJXA1H21J402603",
@@ -37,15 +39,17 @@
             "PTUSDJXA0H20K202526",
             "PTUSDJXA0H20J222525"
         ],
-        "LastRunDate": "2026-01-19T19:46:23.252852+00:00"
+        "LastRunDate": "2026-01-29T22:25:49.890227+00:00"
     },
     {
         "ProductCode": "8PH7",
         "ProductName": "WildcatLake CPU 204",
         "NetworkPath": "\\\\s46file1.cd.intel.com\\sdx\\program\\1278\\prod\\hdmtprogs\\wcl_wcl_sds",
-        "LatestTP": "WCLSDJXA1H61E412603",
-        "NumberOfReleases": 13,
+        "LatestTP": "WCLSDJXA1H61F412605",
+        "NumberOfReleases": 15,
         "ListOfReleases": [
+            "WCLSDJXA1H61F412605",
+            "WCLSDJXA1H61F402605",
             "WCLSDJXA1H61E412603",
             "WCLSDJXA1H61E402602",
             "WCLSDJXA1H61D402549",
@@ -60,15 +64,16 @@
             "WCLSDJXA0H60N222538",
             "WCLSDJXA0H60N212537"
         ],
-        "LastRunDate": "2026-01-19T20:29:07.223131+00:00"
+        "LastRunDate": "2026-01-29T22:28:39.379644+00:00"
     },
     {
         "ProductCode": "8PON",
         "ProductName": "PantherLake CPU 484",
         "NetworkPath": "\\\\alpfile3.al.intel.com\\sdx_ods\\program\\1278\\prod\\hdmtprogs\\ptl_ptl_sds",
-        "LatestTP": "PTLSDJXB0H31V402603",
-        "NumberOfReleases": 32,
+        "LatestTP": "PTLSDJXB0H31V412604",
+        "NumberOfReleases": 33,
         "ListOfReleases": [
+            "PTLSDJXB0H31V412604",
             "PTLSDJXB0H31V402603",
             "PTLSDJXB0H31U402602",
             "PTLSDJXB0H31T432552",
@@ -102,15 +107,16 @@
             "PTLSDJXB0H31K402528",
             "PTLSDJXB0H31J312526"
         ],
-        "LastRunDate": "2026-01-19T20:58:10.584752+00:00"
+        "LastRunDate": "2026-01-29T22:30:17.887413+00:00"
     },
     {
         "ProductCode": "8PXN",
         "ProductName": "Pantherlake GCD 64EU",
         "NetworkPath": "\\\\alpfile3.al.intel.com\\sdx_ods\\program\\1276\\prod\\hdmtprogs\\ptl_ptg_sds",
-        "LatestTP": "PTGSDJXA2H71F432602",
-        "NumberOfReleases": 19,
+        "LatestTP": "PTGSDJXA2H71G412604",
+        "NumberOfReleases": 20,
         "ListOfReleases": [
+            "PTGSDJXA2H71G412604",
             "PTGSDJXA2H71F432602",
             "PTGSDJXA2H71F422602",
             "PTGSDJXA2H71F412550",
@@ -131,15 +137,17 @@
             "PTGSDJXA0H70J302526",
             "PTGSDJXA0H70H202524"
         ],
-        "LastRunDate": "2026-01-19T21:04:02.569613+00:00"
+        "LastRunDate": "2026-01-29T22:31:03.432589+00:00"
     },
     {
         "ProductCode": "8PK7",
         "ProductName": "Nova Lake GCD 32 EU",
         "NetworkPath": "\\\\al4file1.ra.intel.com\\sdx\\program\\1278\\prod\\hdmtprogs\\nvl_ngp_sds",
-        "LatestTP": "NGPSDJXA0H50D042603",
-        "NumberOfReleases": 23,
+        "LatestTP": "NGPSDJXA0H50D062605",
+        "NumberOfReleases": 25,
         "ListOfReleases": [
+            "NGPSDJXA0H50D062605",
+            "NGPSDJXA0H50D052604",
             "NGPSDJXA0H50D042603",
             "NGPSDJXA0H50D032603",
             "NGPSDJXA0H50D022603",
@@ -164,7 +172,7 @@
             "NGPSDJXA0H00C01AIRS",
             "NGPSDJXA0H00C00AIRS"
         ],
-        "LastRunDate": "2026-01-19T21:10:00.694101+00:00"
+        "LastRunDate": "2026-01-29T22:32:43.395225+00:00"
     },
     {
         "ProductCode": "8PF7",
@@ -233,9 +241,10 @@
         "ProductName": "Nova Lake Hub",
         "NetworkPath": "\\\\al4file1.ra.intel.com\\sdx\\program\\1278\\prod\\hdmtprogs\\nvl_nhh_sds",
         "Operation": 119325,
-        "LatestTP": "NHHSDJXA0H60S212603",
-        "NumberOfReleases": 31,
+        "LatestTP": "NHHSDJXA0H60T202605",
+        "NumberOfReleases": 32,
         "ListOfReleases": [
+            "NHHSDJXA0H60T202605",
             "NHHSDJXA0H60S212603",
             "NHHSDJXA0H60S202602",
             "NHHSDJXA0H60R202551",
@@ -268,6 +277,6 @@
             "NHHSDJXA0H30M00AIRS",
             "NHHSDJXA0H30A002524"
         ],
-        "LastRunDate": "2026-01-27T15:19:09.848255+00:00"
+        "LastRunDate": "2026-01-29T22:34:53.897198+00:00"
     }
 ]
