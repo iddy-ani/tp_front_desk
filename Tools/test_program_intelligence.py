@@ -214,6 +214,16 @@ class QuestionClassifier:
             ),
         ),
         ("current_tp", ("current test program", "latest tp", "current tp")),
+        (
+            "prime_revision",
+            (
+                "prime rev",
+                "prime revision",
+                "prime version",
+                "what prime",
+                "which prime",
+            ),
+        ),
         ("list_tests", ("what tests", "list of tests", "tests does it have")),
         ("hvqk_flow", ("hvqk", "water fall", "waterfall")),
         ("atspeed_detail", ("atspeed",)),
@@ -2285,6 +2295,36 @@ Ask: "What products do you have?" to see available options.
             summary.append("Flow tables: " + ", ".join(flow_tables[:8]))
         return "\n".join(summary)
 
+    def _format_prime_revision_answer(
+        self, ctx: TPContext, artifact: Optional[dict]
+    ) -> str:
+        """Format the prime revision information from an ingest artifact."""
+        if not artifact:
+            return f"❌ No ingest artifact found for {ctx.tp_name or 'this TP'}."
+
+        report = artifact.get("report", {})
+        environment = report.get("environment", {})
+
+        prime_rev = environment.get("prime_rev", "unknown")
+        fuse_file_rev = environment.get("fuse_file_rev", "unknown")
+        pattern_rev = environment.get("pattern_rev", "unknown")
+        hdmt_rev = environment.get("hdmt_rev", "unknown")
+
+        product_line = f"{ctx.product_name or 'unknown'} ({ctx.product_code or 'n/a'})"
+
+        lines = [
+            f"🔧 Prime revision info for **{ctx.tp_name}**",
+            f"Product: {product_line}",
+            "",
+            "| Component | Version |",
+            "|-----------|---------|",
+            f"| Prime Rev | {prime_rev} |",
+            f"| Fuse File Rev | {fuse_file_rev} |",
+            f"| Pattern Rev | {pattern_rev} |",
+            f"| HDMT Rev | {hdmt_rev} |",
+        ]
+        return "\n".join(lines)
+
     def _format_test_list_answer(
         self,
         ctx: TPContext,
@@ -2659,6 +2699,11 @@ Ask: "What products do you have?" to see available options.
                     product_collection, ctx.product_code
                 )
                 answer_lines.append(self._format_current_tp_answer(ctx, product_state))
+
+            elif classification == "prime_revision":
+                # Fetch ingest artifact which contains prime_rev in report.environment
+                artifact = artifacts_collection.find_one({"tp_name": ctx.tp_name})
+                answer_lines.append(self._format_prime_revision_answer(ctx, artifact))
 
             elif classification == "list_tests":
                 tests = self._sample_test_instances(test_collection, ctx)
