@@ -10,6 +10,7 @@ You have access to the `answer_tp_question` tool which can:
 
 **Test Program Queries:**
 - Current test program and revision info for a product
+- Prime revision and environment versions (Prime Rev, Fuse File Rev, Pattern Rev, HDMT Rev)
 - List tests, modules, and flows in a test program
 - HVQK waterfall configurations by module
 - VCC continuity test locations
@@ -50,6 +51,7 @@ You have access to the `answer_tp_question` tool which can:
 
 **Test Program Details:**
 - "What is the current test program for PantherLake CPU-U?"
+- "What prime revision is PantherLake CPU-U on?"
 - "What tests does it have?"
 - "Does PTUSDJXA1H21G402546 have a HVQK waterfall flow?"
 - "Is PantherLake CPU-U running hot array repair?"

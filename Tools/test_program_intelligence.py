@@ -2307,8 +2307,7 @@ Ask: "What products do you have?" to see available options.
 
         prime_rev = environment.get("prime_rev", "unknown")
         fuse_file_rev = environment.get("fuse_file_rev", "unknown")
-        pattern_rev = environment.get("pattern_rev", "unknown")
-        hdmt_rev = environment.get("hdmt_rev", "unknown")
+        pattern_revs = environment.get("pattern_revs", [])
 
         product_line = f"{ctx.product_name or 'unknown'} ({ctx.product_code or 'n/a'})"
 
@@ -2320,9 +2319,21 @@ Ask: "What products do you have?" to see available options.
             "|-----------|---------|",
             f"| Prime Rev | {prime_rev} |",
             f"| Fuse File Rev | {fuse_file_rev} |",
-            f"| Pattern Rev | {pattern_rev} |",
-            f"| HDMT Rev | {hdmt_rev} |",
         ]
+
+        # Add pattern revision count if available
+        if pattern_revs:
+            lines.append(f"| Pattern Modules | {len(pattern_revs)} modules |")
+            # Show first few pattern revisions as examples
+            lines.append("")
+            lines.append("**Pattern Revisions (sample):**")
+            for pat in pattern_revs[:5]:
+                module = pat.get("module", "?")
+                rev = pat.get("revision", "?")
+                lines.append(f"- {module}: {rev}")
+            if len(pattern_revs) > 5:
+                lines.append(f"- ... and {len(pattern_revs) - 5} more")
+
         return "\n".join(lines)
 
     def _format_test_list_answer(
@@ -2702,7 +2713,8 @@ Ask: "What products do you have?" to see available options.
 
             elif classification == "prime_revision":
                 # Fetch ingest artifact which contains prime_rev in report.environment
-                artifact = artifacts_collection.find_one({"tp_name": ctx.tp_name})
+                ingest_collection = self._get_collection(client, INGEST_COLLECTION)
+                artifact = ingest_collection.find_one({"tp_name": ctx.tp_name})
                 answer_lines.append(self._format_prime_revision_answer(ctx, artifact))
 
             elif classification == "list_tests":
