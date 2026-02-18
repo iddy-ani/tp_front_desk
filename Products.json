@@ -3,9 +3,14 @@
         "ProductCode": "8PXM",
         "ProductName": "PantherLake CPU-U",
         "NetworkPath": "\\\\alpfile3.al.intel.com\\sdx_ods\\program\\1278\\prod\\hdmtprogs\\ptl_ptu_sds",
-        "LatestTP": "PTUSDJXA1H21K412605",
-        "NumberOfReleases": 32,
+        "LatestTP": "PTUSDJXA1H21M442607",
+        "NumberOfReleases": 37,
         "ListOfReleases": [
+            "PTUSDJXA1H21M442607",
+            "PTUSDJXA1H21M432607",
+            "PTUSDJXA1H21M422607",
+            "PTUSDJXA1H21M412607",
+            "PTUSDJXA1H21M402607",
             "PTUSDJXA1H21K412605",
             "PTUSDJXA1H21K402604",
             "PTUSDJXA1H21J422603",
@@ -39,7 +44,7 @@
             "PTUSDJXA0H20K202526",
             "PTUSDJXA0H20J222525"
         ],
-        "LastRunDate": "2026-01-29T22:25:49.890227+00:00"
+        "LastRunDate": "2026-02-18T16:52:36.388692+00:00"
     },
     {
         "ProductCode": "8PH7",
@@ -70,9 +75,13 @@
         "ProductCode": "8PON",
         "ProductName": "PantherLake CPU 484",
         "NetworkPath": "\\\\alpfile3.al.intel.com\\sdx_ods\\program\\1278\\prod\\hdmtprogs\\ptl_ptl_sds",
-        "LatestTP": "PTLSDJXB0H31V412604",
-        "NumberOfReleases": 33,
+        "LatestTP": "PTLSDJXB0H31W432607",
+        "NumberOfReleases": 37,
         "ListOfReleases": [
+            "PTLSDJXB0H31W432607",
+            "PTLSDJXB0H31W422607",
+            "PTLSDJXB0H31W412606",
+            "PTLSDJXB0H31W402606",
             "PTLSDJXB0H31V412604",
             "PTLSDJXB0H31V402603",
             "PTLSDJXB0H31U402602",
@@ -107,7 +116,7 @@
             "PTLSDJXB0H31K402528",
             "PTLSDJXB0H31J312526"
         ],
-        "LastRunDate": "2026-01-29T22:30:17.887413+00:00"
+        "LastRunDate": "2026-02-18T16:53:26.112942+00:00"
     },
     {
         "ProductCode": "8PXN",
@@ -143,9 +152,11 @@
         "ProductCode": "8PK7",
         "ProductName": "Nova Lake GCD 32 EU",
         "NetworkPath": "\\\\al4file1.ra.intel.com\\sdx\\program\\1278\\prod\\hdmtprogs\\nvl_ngp_sds",
-        "LatestTP": "NGPSDJXA0H50D062605",
-        "NumberOfReleases": 25,
+        "LatestTP": "NGPSDJXA0H50E002606",
+        "NumberOfReleases": 27,
         "ListOfReleases": [
+            "NGPSDJXA0H50E002606",
+            "NGPSDJXA0H50D072605",
             "NGPSDJXA0H50D062605",
             "NGPSDJXA0H50D052604",
             "NGPSDJXA0H50D042603",
@@ -172,7 +183,7 @@
             "NGPSDJXA0H00C01AIRS",
             "NGPSDJXA0H00C00AIRS"
         ],
-        "LastRunDate": "2026-01-29T22:32:43.395225+00:00"
+        "LastRunDate": "2026-02-18T15:10:35.613115+00:00"
     },
     {
         "ProductCode": "8PF7",

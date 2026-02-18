@@ -161,9 +161,34 @@
           "last_processed": "2026-01-29T22:25:49.890227+00:00",
           "git_hash": "846e05417c277e2eef91bddabd5bbfc72ba8a874",
           "mongo_doc_id": "PTUSDJXA1H21K402604:846e05417c277e2eef91bddabd5bbfc72ba8a874"
+        },
+        "PTUSDJXA1H21M442607": {
+          "last_processed": "2026-02-18T14:26:17.462322+00:00",
+          "git_hash": "19ffbaeb186adc0d77437e4eb221df5dbc04a73f",
+          "mongo_doc_id": "PTUSDJXA1H21M442607:19ffbaeb186adc0d77437e4eb221df5dbc04a73f"
+        },
+        "PTUSDJXA1H21M432607": {
+          "last_processed": "2026-02-18T14:31:02.760793+00:00",
+          "git_hash": "704649e131684a247887d01b0d5de82b9c73ab7d",
+          "mongo_doc_id": "PTUSDJXA1H21M432607:704649e131684a247887d01b0d5de82b9c73ab7d"
+        },
+        "PTUSDJXA1H21M422607": {
+          "last_processed": "2026-02-18T14:38:18.782409+00:00",
+          "git_hash": "952dcc86e003b3286eb7878e39f219dee9d265dc",
+          "mongo_doc_id": "PTUSDJXA1H21M422607:952dcc86e003b3286eb7878e39f219dee9d265dc"
+        },
+        "PTUSDJXA1H21M412607": {
+          "last_processed": "2026-02-18T16:33:26.305631+00:00",
+          "git_hash": "4f82829ebe4a2d8262781a58326f391e53e8c472",
+          "mongo_doc_id": "PTUSDJXA1H21M412607:4f82829ebe4a2d8262781a58326f391e53e8c472"
+        },
+        "PTUSDJXA1H21M402607": {
+          "last_processed": "2026-02-18T16:52:36.388692+00:00",
+          "git_hash": "245c1de65aa5830ab91937749053b0fd5884ec6d",
+          "mongo_doc_id": "PTUSDJXA1H21M402607:245c1de65aa5830ab91937749053b0fd5884ec6d"
         }
       },
-      "last_scan": "2026-01-29T22:25:49.890227+00:00"
+      "last_scan": "2026-02-18T16:52:36.388692+00:00"
     },
     "8PH7": {
       "processed_tps": {
@@ -411,9 +436,29 @@
           "last_processed": "2026-01-29T22:30:17.887413+00:00",
           "git_hash": "91fa3c6dc6af8892a67f921ad1d089c1893797af",
           "mongo_doc_id": "PTLSDJXB0H31V412604:91fa3c6dc6af8892a67f921ad1d089c1893797af"
+        },
+        "PTLSDJXB0H31W432607": {
+          "last_processed": "2026-02-18T14:44:06.602139+00:00",
+          "git_hash": "dcf714755179d88bec174ed80461902cf5416e4e",
+          "mongo_doc_id": "PTLSDJXB0H31W432607:dcf714755179d88bec174ed80461902cf5416e4e"
+        },
+        "PTLSDJXB0H31W422607": {
+          "last_processed": "2026-02-18T14:58:32.968483+00:00",
+          "git_hash": "a42164d88dc052027a7c6320367aa9bba9ff0c89",
+          "mongo_doc_id": "PTLSDJXB0H31W422607:a42164d88dc052027a7c6320367aa9bba9ff0c89"
+        },
+        "PTLSDJXB0H31W412606": {
+          "last_processed": "2026-02-18T15:08:13.392980+00:00",
+          "git_hash": "19c5f07850e2b283652a842c8ffe360885ceffdc",
+          "mongo_doc_id": "PTLSDJXB0H31W412606:19c5f07850e2b283652a842c8ffe360885ceffdc"
+        },
+        "PTLSDJXB0H31W402606": {
+          "last_processed": "2026-02-18T16:53:26.112942+00:00",
+          "git_hash": "2c93fc80ed1b779207e8e11261d18f152e3c0e13",
+          "mongo_doc_id": "PTLSDJXB0H31W402606:2c93fc80ed1b779207e8e11261d18f152e3c0e13"
         }
       },
-      "last_scan": "2026-01-29T22:30:17.887413+00:00"
+      "last_scan": "2026-02-18T16:53:26.112942+00:00"
     },
     "8PXN": {
       "processed_tps": {
@@ -646,9 +691,19 @@
           "last_processed": "2026-01-29T22:32:43.395225+00:00",
           "git_hash": "8979d26a04f1eb61c7bd2dbd34a6c877631252d2",
           "mongo_doc_id": "NGPSDJXA0H50D052604:8979d26a04f1eb61c7bd2dbd34a6c877631252d2"
+        },
+        "NGPSDJXA0H50E002606": {
+          "last_processed": "2026-02-18T15:09:35.102949+00:00",
+          "git_hash": "b557efefc759dd5e0cd7477faf538af26a10ccf5",
+          "mongo_doc_id": "NGPSDJXA0H50E002606:b557efefc759dd5e0cd7477faf538af26a10ccf5"
+        },
+        "NGPSDJXA0H50D072605": {
+          "last_processed": "2026-02-18T15:10:35.613115+00:00",
+          "git_hash": "d3baf9441fe44115803afd716fb557fef1cafa1b",
+          "mongo_doc_id": "NGPSDJXA0H50D072605:d3baf9441fe44115803afd716fb557fef1cafa1b"
         }
       },
-      "last_scan": "2026-01-29T22:32:43.395225+00:00"
+      "last_scan": "2026-02-18T15:10:35.613115+00:00"
     },
     "8PF7": {
       "processed_tps": {
